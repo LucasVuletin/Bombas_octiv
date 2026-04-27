@@ -40,9 +40,12 @@ export function TopBar({
     <header className="hmi-panel rounded-[2rem] px-5 py-5 md:px-6">
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="max-w-4xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200/75">
-            Halliburton Argentina | Frac spread HMI
-          </p>
+          <div className="flex items-center gap-3">
+            <img src="/icons/H.png" alt="Logo" className="h-8 w-8" />
+            <p className="text-xs font-semibold uppercase tracking-[0.32em] text-cyan-200/75">
+              Halliburton Argentina | Frac spread HMI
+            </p>
+          </div>
           <h1 className="mt-2 text-3xl text-slate-50 md:text-4xl">
             Layout táctil de bombas de fractura
           </h1>
