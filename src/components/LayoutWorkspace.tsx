@@ -1,4 +1,4 @@
-import { Manifold, Pump } from "../models";
+import { Manifold, Pump, PumpSignalColumnCount } from "../models";
 import { buildManifoldSlots } from "../utils/layoutState";
 import { ManifoldAssembly } from "./ManifoldAssembly";
 
@@ -6,6 +6,7 @@ type LayoutWorkspaceProps = {
   manifolds: Manifold[];
   notice?: string | null;
   pumps: Pump[];
+  signalColumnCount: PumpSignalColumnCount;
   selectedPumpId: string | null;
   onSelectPump: (pumpId: string) => void;
 };
@@ -13,6 +14,7 @@ type LayoutWorkspaceProps = {
 export function LayoutWorkspace({
   manifolds,
   pumps,
+  signalColumnCount,
   notice = null,
   selectedPumpId,
   onSelectPump,
@@ -34,10 +36,10 @@ export function LayoutWorkspace({
 
         <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.22em]">
           <span className="rounded-full border border-[#7FB3C8]/35 bg-[#7FB3C8]/12 px-3 py-1 text-slate-100">
-            Linea limpia
+            Linea celeste
           </span>
           <span className="rounded-full border border-[#8B6A4A]/35 bg-[#8B6A4A]/12 px-3 py-1 text-slate-100">
-            Linea sucia
+            Linea marron
           </span>
           <span className="rounded-full border border-slate-600/70 bg-slate-900/60 px-3 py-1 text-slate-300">
             Sin linea
@@ -59,6 +61,7 @@ export function LayoutWorkspace({
             leftSlots={buildManifoldSlots(manifolds, pumps, manifold.id, "left")}
             rightSlots={buildManifoldSlots(manifolds, pumps, manifold.id, "right")}
             selectedPumpId={selectedPumpId}
+            signalColumnCount={signalColumnCount}
             onSelectPump={onSelectPump}
           />
         ))}

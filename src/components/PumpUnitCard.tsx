@@ -1,14 +1,16 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import {
-  NON_OPERATIONAL_REASON_META,
+  getNonOperationalReasonLabel,
   PUMP_OPERATION_META,
   Pump,
+  PumpSignalColumnCount,
 } from "../models";
 import { PumpSignalGrid } from "./PumpSignalGrid";
 
 type PumpUnitCardProps = {
   pump: Pump;
+  signalColumnCount: PumpSignalColumnCount;
   onSelect: (pumpId: string) => void;
   isSelected?: boolean;
   draggable?: boolean;
@@ -39,6 +41,7 @@ function DragHandleIcon() {
 
 export function PumpUnitCard({
   pump,
+  signalColumnCount,
   onSelect,
   isSelected = false,
   draggable = true,
@@ -46,8 +49,12 @@ export function PumpUnitCard({
 }: PumpUnitCardProps) {
   const operationMeta = PUMP_OPERATION_META[pump.operationState];
   const reasonLabel = pump.nonOperationalReason
-    ? NON_OPERATIONAL_REASON_META[pump.nonOperationalReason].label
+    ? getNonOperationalReasonLabel(pump.nonOperationalReason)
     : null;
+  const isDgb = pump.isDgb === true;
+  const substitutionPercentage = Number.isFinite(pump.substitutionPercentage)
+    ? pump.substitutionPercentage
+    : 0;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: pump.id,
     disabled: !draggable,
@@ -106,18 +113,33 @@ export function PumpUnitCard({
               ) : null}
             </div>
 
-            <div className="shrink-0 text-right">
-              <p className="text-[8px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                Posicion
-              </p>
-              <p className="text-sm font-semibold leading-none text-slate-100">
-                {pump.position}
-              </p>
+            <div className="flex shrink-0 gap-2 text-right">
+              <div>
+                <p className="text-[8px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  Posicion
+                </p>
+                <p className="text-sm font-semibold leading-none text-slate-100">
+                  {pump.position}
+                </p>
+              </div>
+              <div className="min-w-10 border-l border-white/10 pl-2">
+                <p className="text-[8px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  DGB
+                </p>
+                <p className="text-sm font-semibold leading-none text-[#B8D0DB]">
+                  {isDgb ? `${substitutionPercentage}%` : "No"}
+                </p>
+              </div>
             </div>
           </div>
 
           <div className="flex min-h-0 flex-1 items-center pt-1.5">
-            <PumpSignalGrid signals={pump.signals} compact className="w-full min-w-0" />
+            <PumpSignalGrid
+              signals={pump.signals}
+              columnCount={signalColumnCount}
+              compact
+              className="w-full min-w-0"
+            />
           </div>
         </div>
       </button>

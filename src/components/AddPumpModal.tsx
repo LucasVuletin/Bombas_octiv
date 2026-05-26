@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createMockSignals } from "../data/defaultPumps";
 import { PumpFormFields } from "./PumpFormFields";
-import { PumpNonOperationalReason } from "../models";
+import { Pump } from "../models";
 import {
   PumpFormErrors,
   PumpFormValues,
@@ -14,9 +14,11 @@ type AddPumpModalProps = {
   onClose: () => void;
   onAddPump: (values: {
     sap: string;
-    operationState: "operative" | "non-operative";
-    nonOperationalReason: PumpNonOperationalReason | null;
+    operationState: Pump["operationState"];
+    nonOperationalReason: Pump["nonOperationalReason"];
     position: number;
+    isDgb: boolean;
+    substitutionPercentage: number;
     signals: {
       p: number;
       d: number;
@@ -33,6 +35,8 @@ function createInitialValues(): PumpFormValues {
     operationState: "",
     nonOperationalReason: "",
     position: "",
+    isDgb: false,
+    substitutionPercentage: "0",
     connection: "none",
     pValue: String(signals.p),
     dValue: String(signals.d),
@@ -87,6 +91,21 @@ export function AddPumpModal({ isOpen, onClose, onAddPump }: AddPumpModalProps) 
         return nextValues;
       }
 
+      if (field === "substitutionPercentage") {
+        nextValues.substitutionPercentage = String(value).replace(/[^\d]/g, "").slice(0, 3);
+        return nextValues;
+      }
+
+      if (field === "isDgb") {
+        nextValues.isDgb = Boolean(value);
+
+        if (!nextValues.isDgb) {
+          nextValues.substitutionPercentage = "0";
+        }
+
+        return nextValues;
+      }
+
       if (field === "pValue") {
         nextValues.pValue = String(value).replace(/[^\d]/g, "").slice(0, 3);
         return nextValues;
@@ -131,9 +150,11 @@ export function AddPumpModal({ isOpen, onClose, onAddPump }: AddPumpModalProps) 
       operationState: values.operationState,
       nonOperationalReason:
         values.operationState === "non-operative"
-          ? (values.nonOperationalReason as PumpNonOperationalReason)
+          ? values.nonOperationalReason.trim()
           : null,
       position: validation.parsedPosition,
+      isDgb: values.isDgb,
+      substitutionPercentage: validation.parsedSubstitutionPercentage,
       signals: {
         p: validation.parsedPValue,
         d: validation.parsedDValue,

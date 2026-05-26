@@ -2,13 +2,10 @@ export type SetNumber = 1 | 2 | 3 | 4 | 5 | 6;
 export type PumpSide = "left" | "right" | "bench";
 export type PumpConnection = "clean" | "dirty" | "none";
 export type PumpOperationState = "operative" | "non-operative";
-export type PumpNonOperationalReason =
-  | "empaque"
-  | "cavitacion"
-  | "dpm"
-  | "no-encastra";
+export type PumpNonOperationalReason = string;
 export type ManifoldType = "clean" | "dirty";
 export type PumpSignalKey = "p" | "d" | "s";
+export type PumpSignalColumnCount = 3 | 5;
 
 export type PumpSignals = {
   p: number;
@@ -26,6 +23,8 @@ export type Pump = {
   operationState: PumpOperationState;
   nonOperationalReason: PumpNonOperationalReason | null;
   position: number;
+  isDgb: boolean;
+  substitutionPercentage: number;
   signals: PumpSignals;
 };
 
@@ -40,7 +39,7 @@ export const SET_OPTIONS: SetNumber[] = [1, 2, 3, 4, 5, 6];
 export const MAX_PUMP_POSITION = 40;
 export const MAX_SIGNAL_VALUE = 150;
 export const MIN_SIGNAL_VALUE = 1;
-export const PUMP_SIGNAL_COLUMNS = 3;
+export const PUMP_SIGNAL_COLUMN_OPTIONS: PumpSignalColumnCount[] = [3, 5];
 
 export const SIDE_LABELS: Record<PumpSide, string> = {
   left: "Izquierda",
@@ -80,25 +79,22 @@ export const PUMP_OPERATION_META: Record<
   },
 };
 
-export const NON_OPERATIONAL_REASON_META: Record<
-  PumpNonOperationalReason,
-  {
-    label: string;
-  }
-> = {
-  empaque: {
-    label: "empaque",
-  },
-  cavitacion: {
-    label: "cavitacion",
-  },
-  dpm: {
-    label: "DPM",
-  },
-  "no-encastra": {
-    label: "no encastra",
-  },
-};
+export const NON_OPERATIONAL_REASON_OPTIONS: Array<{
+  value: PumpNonOperationalReason;
+  label: string;
+}> = [
+  { value: "empaque", label: "empaque" },
+  { value: "cavitacion", label: "cavitacion" },
+  { value: "dpm", label: "DPM" },
+  { value: "no-encastra", label: "no encastra" },
+];
+
+export function getNonOperationalReasonLabel(reason: PumpNonOperationalReason) {
+  return (
+    NON_OPERATIONAL_REASON_OPTIONS.find((option) => option.value === reason)?.label ??
+    reason
+  );
+}
 
 export const CONNECTION_META: Record<
   PumpConnection,
@@ -112,16 +108,16 @@ export const CONNECTION_META: Record<
   }
 > = {
   clean: {
-    label: "Manifold limpio",
-    shortLabel: "Limpio",
+    label: "Linea celeste",
+    shortLabel: "",
     lineClass: "bg-[#7FB3C8]",
     dotClass: "bg-[#7FB3C8]",
     pillClass: "border-[#7FB3C8]/35 bg-[#7FB3C8]/12 text-[#DBE8EE]",
     labelClass: "text-[#B8D0DB]",
   },
   dirty: {
-    label: "Manifold sucio",
-    shortLabel: "Sucio",
+    label: "Linea marron",
+    shortLabel: "",
     lineClass: "bg-[#8B6A4A]",
     dotClass: "bg-[#8B6A4A]",
     pillClass: "border-[#8B6A4A]/35 bg-[#8B6A4A]/12 text-[#EFE2D4]",
@@ -147,13 +143,13 @@ export const MANIFOLD_TYPE_META: Record<
   }
 > = {
   clean: {
-    label: "Limpio",
+    label: "Celeste",
     accentClass: "border-[#7FB3C8]/35 bg-[#7FB3C8]/10 text-[#DBE8EE]",
     chipClass: "bg-[#7FB3C8]",
     slotClass: "bg-[#7FB3C8]/70",
   },
   dirty: {
-    label: "Sucio",
+    label: "Marron",
     accentClass: "border-[#8B6A4A]/40 bg-[#8B6A4A]/12 text-[#F0E2D1]",
     chipClass: "bg-[#8B6A4A]",
     slotClass: "bg-[#8B6A4A]/75",
@@ -165,13 +161,6 @@ export const PUMP_OPERATION_OPTIONS = (
 ).map((operationState) => ({
   value: operationState,
   label: PUMP_OPERATION_META[operationState].label,
-}));
-
-export const NON_OPERATIONAL_REASON_OPTIONS = (
-  Object.keys(NON_OPERATIONAL_REASON_META) as PumpNonOperationalReason[]
-).map((reason) => ({
-  value: reason,
-  label: NON_OPERATIONAL_REASON_META[reason].label,
 }));
 
 export const CONNECTION_OPTIONS = (

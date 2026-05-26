@@ -1,12 +1,19 @@
-import { PUMP_SIGNAL_COLUMNS, PUMP_SIGNAL_KEYS, PUMP_SIGNAL_LABELS, PumpSignals } from "../models";
+import {
+  PUMP_SIGNAL_KEYS,
+  PUMP_SIGNAL_LABELS,
+  PumpSignalColumnCount,
+  PumpSignals,
+} from "../models";
 
 type PumpSignalGridProps = {
   className?: string;
+  columnCount: PumpSignalColumnCount;
   compact?: boolean;
   signals: PumpSignals;
 };
 
 export function PumpSignalGrid({
+  columnCount,
   signals,
   compact = false,
   className = "",
@@ -14,9 +21,14 @@ export function PumpSignalGrid({
   const valueClass = compact
     ? "text-[10px]"
     : "text-sm";
-  const rowClass = compact
-    ? "grid-cols-[0.8rem_repeat(3,minmax(0,1fr))]"
-    : "grid-cols-[1.2rem_repeat(3,minmax(0,1fr))]";
+  const rowClass =
+    columnCount === 5
+      ? compact
+        ? "grid-cols-[0.8rem_repeat(5,minmax(0,1fr))]"
+        : "grid-cols-[1.2rem_repeat(5,minmax(0,1fr))]"
+      : compact
+        ? "grid-cols-[0.8rem_repeat(3,minmax(0,1fr))]"
+        : "grid-cols-[1.2rem_repeat(3,minmax(0,1fr))]";
 
   return (
     <div
@@ -34,7 +46,7 @@ export function PumpSignalGrid({
             <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
               {PUMP_SIGNAL_LABELS[signalKey]}
             </span>
-            {Array.from({ length: PUMP_SIGNAL_COLUMNS }, (_, index) => (
+            {Array.from({ length: columnCount }, (_, index) => (
               <span
                 key={`${signalKey}-${index}`}
                 className={`text-center font-mono font-semibold tabular-nums leading-none text-[#D9B5B5] ${valueClass}`}

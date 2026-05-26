@@ -224,6 +224,8 @@ export function createDefaultPumps(): Pump[] {
       operationState: pump.operationState,
       nonOperationalReason: pump.nonOperationalReason,
       position: pump.position,
+      isDgb: false,
+      substitutionPercentage: 0,
       signals: createMockSignals(),
     };
   });

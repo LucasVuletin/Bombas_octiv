@@ -76,40 +76,85 @@ export function PumpFormFields({
           <span className="mb-2 block text-sm font-semibold uppercase tracking-[0.22em] text-slate-300">
             Motivo de no operativa
           </span>
-          <select
+          <input
+            list="non-operational-reason-options"
             value={values.nonOperationalReason}
             onChange={(event) =>
-              onChange(
-                "nonOperationalReason",
-                event.target.value as PumpFormValues["nonOperationalReason"],
-              )
+              onChange("nonOperationalReason", event.target.value)
             }
             className="w-full rounded-2xl border border-slate-700/70 bg-slate-900/85 px-5 py-4 text-lg text-slate-50 outline-none transition focus:border-[#7FB3C8]/60 focus:ring-2 focus:ring-[#7FB3C8]/20"
-          >
-            <option value="">Seleccionar</option>
+            placeholder="Escribe un motivo o selecciona uno sugerido"
+          />
+          <datalist id="non-operational-reason-options">
             {NON_OPERATIONAL_REASON_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </datalist>
           <FieldError message={errors.nonOperationalReason} />
         </label>
       ) : null}
 
-      <label className="block">
-        <span className="mb-2 block text-sm font-semibold uppercase tracking-[0.22em] text-slate-300">
-          Posicion
-        </span>
-        <input
-          inputMode="numeric"
-          value={values.position}
-          onChange={(event) => onChange("position", event.target.value)}
-          className="w-full rounded-2xl border border-slate-700/70 bg-slate-900/85 px-5 py-4 text-2xl tracking-[0.08em] text-slate-50 outline-none transition focus:border-[#7FB3C8]/60 focus:ring-2 focus:ring-[#7FB3C8]/20"
-          placeholder="1 a 40"
-        />
-        <FieldError message={errors.position} />
-      </label>
+      <div className="rounded-[1.6rem] border border-slate-700/70 bg-slate-950/45 p-5">
+        <p className="mb-4 text-sm font-semibold uppercase tracking-[0.22em] text-slate-300">
+          Posicion y DGB
+        </p>
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_9rem_minmax(0,1fr)]">
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold uppercase tracking-[0.22em] text-slate-300">
+              Posicion
+            </span>
+            <input
+              inputMode="numeric"
+              value={values.position}
+              onChange={(event) => onChange("position", event.target.value)}
+              className="w-full rounded-2xl border border-slate-700/70 bg-slate-900/85 px-5 py-4 text-2xl tracking-[0.08em] text-slate-50 outline-none transition focus:border-[#7FB3C8]/60 focus:ring-2 focus:ring-[#7FB3C8]/20"
+              placeholder="1 a 40"
+            />
+            <FieldError message={errors.position} />
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold uppercase tracking-[0.22em] text-slate-300">
+              DGB
+            </span>
+            <select
+              value={values.isDgb ? "yes" : "no"}
+              onChange={(event) => onChange("isDgb", event.target.value === "yes")}
+              className="w-full rounded-2xl border border-slate-700/70 bg-slate-900/85 px-4 py-4 text-lg text-slate-50 outline-none transition focus:border-[#7FB3C8]/60 focus:ring-2 focus:ring-[#7FB3C8]/20"
+            >
+              <option value="no">No</option>
+              <option value="yes">Si</option>
+            </select>
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold uppercase tracking-[0.22em] text-slate-300">
+              Sustitucion
+            </span>
+            <div className="flex overflow-hidden rounded-2xl border border-slate-700/70 bg-slate-900/85 transition focus-within:border-[#7FB3C8]/60 focus-within:ring-2 focus-within:ring-[#7FB3C8]/20">
+              <input
+                inputMode="numeric"
+                value={values.substitutionPercentage}
+                disabled={!values.isDgb}
+                onChange={(event) =>
+                  onChange(
+                    "substitutionPercentage",
+                    event.target.value.replace(/[^\d]/g, "").slice(0, 3),
+                  )
+                }
+                className="min-w-0 flex-1 bg-transparent px-5 py-4 text-2xl tracking-[0.08em] text-slate-50 outline-none disabled:text-slate-500"
+                placeholder="0 a 100"
+              />
+              <span className="flex items-center border-l border-slate-700/70 px-4 text-xl font-semibold text-slate-300">
+                %
+              </span>
+            </div>
+            <FieldError message={errors.substitutionPercentage} />
+          </label>
+        </div>
+      </div>
 
       {showConnection ? (
         <label className="block">

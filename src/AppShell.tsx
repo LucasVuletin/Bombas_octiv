@@ -20,7 +20,7 @@ import { PumpUnitCard } from "./components/PumpUnitCard";
 import { createDefaultManifolds } from "./data/defaultManifolds";
 import { createDefaultPumps } from "./data/defaultPumps";
 import { useLocalStorage } from "./hooks/useLocalStorage";
-import { Manifold, Pump, SetNumber } from "./models";
+import { Manifold, Pump, PumpSignalColumnCount, SetNumber } from "./models";
 import {
   applyPumpEdits,
   getBenchPumps,
@@ -33,6 +33,7 @@ import {
 const PUMPS_STORAGE_KEY = "halliburton-frac-layout-pumps-v2";
 const MANIFOLDS_STORAGE_KEY = "halliburton-frac-layout-manifolds-v2";
 const SET_STORAGE_KEY = "halliburton-frac-layout-selected-set-v1";
+const SIGNAL_COLUMNS_STORAGE_KEY = "halliburton-frac-layout-signal-columns-v1";
 
 function getFullscreenState() {
   return typeof document !== "undefined" && Boolean(document.fullscreenElement);
@@ -58,19 +59,24 @@ function createManifoldLabel(manifolds: Manifold[], type: Manifold["type"]) {
 }
 
 export default function AppShell() {
-  const [pumps, setPumps, resetPumps] = useLocalStorage<Pump[]>(
+  const [pumps, setPumps] = useLocalStorage<Pump[]>(
     PUMPS_STORAGE_KEY,
     createDefaultPumps,
     2,
   );
-  const [manifolds, setManifolds, resetManifolds] = useLocalStorage<Manifold[]>(
+  const [manifolds, setManifolds] = useLocalStorage<Manifold[]>(
     MANIFOLDS_STORAGE_KEY,
     createDefaultManifolds,
     2,
   );
-  const [selectedSet, setSelectedSet, resetSelectedSet] = useLocalStorage<SetNumber>(
+  const [selectedSet, setSelectedSet] = useLocalStorage<SetNumber>(
     SET_STORAGE_KEY,
     1,
+    1,
+  );
+  const [signalColumnCount, setSignalColumnCount] = useLocalStorage<PumpSignalColumnCount>(
+    SIGNAL_COLUMNS_STORAGE_KEY,
+    3,
     1,
   );
   const [selectedPumpId, setSelectedPumpId] = useState<string | null>(null);
@@ -107,6 +113,34 @@ export default function AppShell() {
   }, []);
 
   useEffect(() => {
+    setPumps((currentPumps) => {
+      const needsDgbDefaults = currentPumps.some(
+        (pump) =>
+          typeof pump.isDgb !== "boolean" ||
+          !Number.isInteger(pump.substitutionPercentage) ||
+          pump.substitutionPercentage < 0 ||
+          pump.substitutionPercentage > 100,
+      );
+
+      if (!needsDgbDefaults) {
+        return currentPumps;
+      }
+
+      return currentPumps.map((pump) => ({
+        ...pump,
+        isDgb: pump.isDgb === true,
+        substitutionPercentage:
+          pump.isDgb === true &&
+          Number.isInteger(pump.substitutionPercentage) &&
+          pump.substitutionPercentage >= 0 &&
+          pump.substitutionPercentage <= 100
+            ? pump.substitutionPercentage
+            : 0,
+      }));
+    });
+  }, [setPumps]);
+
+  useEffect(() => {
     if (!layoutNotice) {
       return undefined;
     }
@@ -124,6 +158,8 @@ export default function AppShell() {
   const stats = getPumpStats(pumps);
   const selectedPump = findPump(pumps, selectedPumpId);
   const activePump = findPump(pumps, activeDragId);
+  const visibleSignalColumnCount: PumpSignalColumnCount =
+    signalColumnCount === 5 ? 5 : 3;
 
   function handleDragStart(event: DragStartEvent) {
     const pumpId = String(event.active.id);
@@ -209,11 +245,23 @@ export default function AppShell() {
     return result.error;
   }
 
+  function handleDeletePump(pumpId: string) {
+    startTransition(() => {
+      setPumps((currentPumps) => currentPumps.filter((pump) => pump.id !== pumpId));
+    });
+
+    setSelectedPumpId(null);
+    setActiveDragId(null);
+    setLayoutNotice("Bomba eliminada del layout.");
+  }
+
   function handleAddPump(values: {
     sap: string;
     operationState: Pump["operationState"];
     nonOperationalReason: Pump["nonOperationalReason"];
     position: number;
+    isDgb: boolean;
+    substitutionPercentage: number;
     signals: Pump["signals"];
   }) {
     startTransition(() => {
@@ -232,6 +280,8 @@ export default function AppShell() {
             operationState: values.operationState,
             nonOperationalReason: values.nonOperationalReason,
             position: values.position,
+            isDgb: values.isDgb,
+            substitutionPercentage: values.substitutionPercentage,
             signals: values.signals,
           },
         ];
@@ -262,18 +312,32 @@ export default function AppShell() {
     setIsAddManifoldOpen(false);
   }
 
-  function handleResetLayout() {
+  function handleSaveLayout() {
+    if (!window.confirm("Esta de acuerdo con guardar el layout tal como esta configurado?")) {
+      return;
+    }
+
+    setLayoutNotice("Layout guardado en este equipo.");
+  }
+
+  function handleClearLayout() {
+    if (
+      !window.confirm(
+        "Esta de acuerdo con limpiar el layout? Se borraran todas las bombas y se conservaran los manifolds.",
+      )
+    ) {
+      return;
+    }
+
     startTransition(() => {
-      resetPumps();
-      resetManifolds();
-      resetSelectedSet();
+      setPumps([]);
     });
 
     setSelectedPumpId(null);
     setActiveDragId(null);
     setIsAddPumpOpen(false);
     setIsAddManifoldOpen(false);
-    setLayoutNotice(null);
+    setLayoutNotice("Layout limpio. Se conservaron los manifolds y se borraron las bombas.");
   }
 
   return (
@@ -288,15 +352,19 @@ export default function AppShell() {
         <main className="mx-auto flex min-h-screen w-full max-w-[1920px] flex-col gap-5 px-4 py-4 md:px-6 md:py-6 xl:px-8">
           <ControlHeader
             selectedSet={selectedSet}
+            signalColumnCount={visibleSignalColumnCount}
             totalInSet={stats.totalInSet}
-            operativeCount={stats.operativeCount}
-            nonOperativeCount={stats.nonOperativeCount}
-            benchCount={stats.benchCount}
-            manifoldCount={manifolds.length}
+            operativeInSetCount={stats.operativeInSetCount}
+            operativeOutOfSetCount={stats.operativeOutOfSetCount}
+            nonOperativeInSetCount={stats.nonOperativeInSetCount}
+            nonOperativeOutOfSetCount={stats.nonOperativeOutOfSetCount}
+            dgbSubstitutionPercentage={stats.dgbSubstitutionPercentage}
             onSetChange={setSelectedSet}
+            onSignalColumnCountChange={setSignalColumnCount}
             onOpenAddPump={() => setIsAddPumpOpen(true)}
             onOpenAddManifold={() => setIsAddManifoldOpen(true)}
-            onReset={handleResetLayout}
+            onSaveLayout={handleSaveLayout}
+            onClearLayout={handleClearLayout}
             onToggleFullscreen={handleToggleFullscreen}
             isFullscreen={isFullscreen}
           />
@@ -304,6 +372,7 @@ export default function AppShell() {
           <LayoutWorkspace
             pumps={pumps}
             manifolds={manifolds}
+            signalColumnCount={visibleSignalColumnCount}
             notice={layoutNotice}
             selectedPumpId={selectedPumpId}
             onSelectPump={setSelectedPumpId}
@@ -311,6 +380,7 @@ export default function AppShell() {
 
           <PumpReserve
             pumps={benchPumps}
+            signalColumnCount={visibleSignalColumnCount}
             selectedPumpId={selectedPumpId}
             onSelectPump={setSelectedPumpId}
           />
@@ -318,6 +388,7 @@ export default function AppShell() {
           <PumpEditModal
             pump={selectedPump}
             onClose={() => setSelectedPumpId(null)}
+            onDelete={handleDeletePump}
             onSave={handleSavePump}
           />
 
@@ -340,6 +411,7 @@ export default function AppShell() {
           <div className="w-[24rem] max-w-[90vw] opacity-95">
             <PumpUnitCard
               pump={activePump}
+              signalColumnCount={visibleSignalColumnCount}
               onSelect={() => undefined}
               draggable={false}
               isOverlay

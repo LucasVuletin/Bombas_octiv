@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CONNECTION_META, Pump, PumpNonOperationalReason, SIDE_LABELS } from "../models";
+import { CONNECTION_META, Pump, SIDE_LABELS } from "../models";
 import { PumpFormFields } from "./PumpFormFields";
 import {
   PumpFormErrors,
@@ -11,6 +11,7 @@ import {
 type PumpEditModalProps = {
   pump: Pump | null;
   onClose: () => void;
+  onDelete: (pumpId: string) => void;
   onSave: (pump: Pump) => string | null;
 };
 
@@ -21,6 +22,8 @@ function getInitialValues(pump: Pump | null): PumpFormValues {
       operationState: "",
       nonOperationalReason: "",
       position: "",
+      isDgb: false,
+      substitutionPercentage: "0",
       connection: "none",
       pValue: "",
       dValue: "",
@@ -33,6 +36,8 @@ function getInitialValues(pump: Pump | null): PumpFormValues {
     operationState: pump.operationState,
     nonOperationalReason: pump.nonOperationalReason ?? "",
     position: String(pump.position),
+    isDgb: pump.isDgb === true,
+    substitutionPercentage: String(pump.substitutionPercentage ?? 0),
     connection: pump.connection,
     pValue: String(pump.signals.p),
     dValue: String(pump.signals.d),
@@ -49,7 +54,7 @@ function SummaryRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function PumpEditModal({ pump, onClose, onSave }: PumpEditModalProps) {
+export function PumpEditModal({ pump, onClose, onDelete, onSave }: PumpEditModalProps) {
   const [values, setValues] = useState<PumpFormValues>(getInitialValues(pump));
   const [errors, setErrors] = useState<PumpFormErrors>({});
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -98,6 +103,21 @@ export function PumpEditModal({ pump, onClose, onSave }: PumpEditModalProps) {
 
       if (field === "position") {
         nextValues.position = String(value).replace(/[^\d]/g, "").slice(0, 2);
+        return nextValues;
+      }
+
+      if (field === "substitutionPercentage") {
+        nextValues.substitutionPercentage = String(value).replace(/[^\d]/g, "").slice(0, 3);
+        return nextValues;
+      }
+
+      if (field === "isDgb") {
+        nextValues.isDgb = Boolean(value);
+
+        if (!nextValues.isDgb) {
+          nextValues.substitutionPercentage = "0";
+        }
+
         return nextValues;
       }
 
@@ -151,9 +171,11 @@ export function PumpEditModal({ pump, onClose, onSave }: PumpEditModalProps) {
       operationState: values.operationState,
       nonOperationalReason:
         values.operationState === "non-operative"
-          ? (values.nonOperationalReason as PumpNonOperationalReason)
+          ? values.nonOperationalReason.trim()
           : null,
       position: validation.parsedPosition,
+      isDgb: values.isDgb,
+      substitutionPercentage: validation.parsedSubstitutionPercentage,
       connection: pump.side === "bench" ? "none" : values.connection,
       signals: {
         p: validation.parsedPValue,
@@ -165,6 +187,14 @@ export function PumpEditModal({ pump, onClose, onSave }: PumpEditModalProps) {
     if (error) {
       setSaveError(error);
     }
+  }
+
+  function handleDelete() {
+    if (!pump || !window.confirm(`Esta de acuerdo con borrar la bomba SAP ${pump.sap}?`)) {
+      return;
+    }
+
+    onDelete(pump.id);
   }
 
   return (
@@ -213,6 +243,10 @@ export function PumpEditModal({ pump, onClose, onSave }: PumpEditModalProps) {
             <SummaryRow label="Zona actual" value={SIDE_LABELS[pump.side]} />
             <SummaryRow label="Posicion actual" value={String(pump.position)} />
             <SummaryRow
+              label="DGB / Sustitucion"
+              value={values.isDgb ? `Si / ${values.substitutionPercentage || "0"}%` : "No / 0%"}
+            />
+            <SummaryRow
               label="Linea actual"
               value={CONNECTION_META[pump.side === "bench" ? "none" : values.connection].label}
             />
@@ -227,21 +261,30 @@ export function PumpEditModal({ pump, onClose, onSave }: PumpEditModalProps) {
           </div>
         ) : null}
 
-        <div className="flex flex-col-reverse gap-3 border-t border-slate-800/80 px-6 py-5 sm:flex-row sm:justify-end">
+        <div className="flex flex-col gap-3 border-t border-slate-800/80 px-6 py-5 sm:flex-row sm:justify-between">
           <button
             type="button"
-            onClick={onClose}
-            className="min-h-14 rounded-2xl border border-slate-700/70 bg-slate-900/85 px-6 text-base font-semibold text-slate-200 transition hover:border-slate-500/70 hover:text-white"
+            onClick={handleDelete}
+            className="min-h-14 rounded-2xl border border-rose-300/25 bg-rose-500/10 px-6 text-base font-semibold text-rose-100 transition hover:border-rose-300/45 hover:bg-rose-500/16"
           >
-            Cancelar
+            Borrar bomba
           </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="min-h-14 rounded-2xl border border-[#7FB3C8]/35 bg-[#7FB3C8]/12 px-6 text-base font-semibold text-slate-50 transition hover:border-[#7FB3C8]/55 hover:bg-[#7FB3C8]/16"
-          >
-            Guardar cambios
-          </button>
+          <div className="flex flex-col-reverse gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={onClose}
+              className="min-h-14 rounded-2xl border border-slate-700/70 bg-slate-900/85 px-6 text-base font-semibold text-slate-200 transition hover:border-slate-500/70 hover:text-white"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              className="min-h-14 rounded-2xl border border-[#7FB3C8]/35 bg-[#7FB3C8]/12 px-6 text-base font-semibold text-slate-50 transition hover:border-[#7FB3C8]/55 hover:bg-[#7FB3C8]/16"
+            >
+              Guardar cambios
+            </button>
+          </div>
         </div>
       </div>
     </div>

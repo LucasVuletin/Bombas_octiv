@@ -11,8 +11,10 @@ import {
 export type PumpFormValues = {
   sap: string;
   operationState: PumpOperationState | "";
-  nonOperationalReason: PumpNonOperationalReason | "";
+  nonOperationalReason: PumpNonOperationalReason;
   position: string;
+  isDgb: boolean;
+  substitutionPercentage: string;
   connection: PumpConnection;
   pValue: string;
   dValue: string;
@@ -21,7 +23,14 @@ export type PumpFormValues = {
 
 export type PumpFormErrors = Partial<
   Record<
-    "sap" | "operationState" | "nonOperationalReason" | "position" | "pValue" | "dValue" | "sValue",
+    | "sap"
+    | "operationState"
+    | "nonOperationalReason"
+    | "position"
+    | "substitutionPercentage"
+    | "pValue"
+    | "dValue"
+    | "sValue",
     string
   >
 >;
@@ -48,8 +57,8 @@ export function validatePumpForm(values: PumpFormValues) {
     errors.operationState = "Selecciona el estado operativo.";
   }
 
-  if (values.operationState === "non-operative" && !values.nonOperationalReason) {
-    errors.nonOperationalReason = "Selecciona un motivo.";
+  if (values.operationState === "non-operative" && !values.nonOperationalReason.trim()) {
+    errors.nonOperationalReason = "Ingresa un motivo.";
   }
 
   const parsedPosition = Number(values.position);
@@ -61,6 +70,18 @@ export function validatePumpForm(values: PumpFormValues) {
     parsedPosition > MAX_PUMP_POSITION
   ) {
     errors.position = `La posicion debe ser un entero entre 1 y ${MAX_PUMP_POSITION}.`;
+  }
+
+  const parsedSubstitutionPercentage = Number(values.substitutionPercentage);
+
+  if (
+    values.isDgb &&
+    (values.substitutionPercentage.trim() === "" ||
+      !Number.isInteger(parsedSubstitutionPercentage) ||
+      parsedSubstitutionPercentage < 0 ||
+      parsedSubstitutionPercentage > 100)
+  ) {
+    errors.substitutionPercentage = "El porcentaje DGB debe ser un entero entre 0 y 100.";
   }
 
   const parsedPValue = Number(values.pValue);
@@ -98,6 +119,7 @@ export function validatePumpForm(values: PumpFormValues) {
     errors,
     isValid: Object.keys(errors).length === 0,
     parsedPosition,
+    parsedSubstitutionPercentage: values.isDgb ? parsedSubstitutionPercentage : 0,
     parsedPValue,
     parsedDValue,
     parsedSValue,

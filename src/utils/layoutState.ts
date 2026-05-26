@@ -81,13 +81,27 @@ export function getBenchPumps(pumps: Pump[]) {
 
 export function getPumpStats(pumps: Pump[]) {
   const inSet = pumps.filter((pump) => pump.side !== "bench");
+  const outOfSet = pumps.filter((pump) => pump.side === "bench");
+  const dgbPumps = pumps.filter((pump) => pump.isDgb === true);
+  const dgbSubstitutionPercentage =
+    dgbPumps.length === 0
+      ? 0
+      : Math.round(
+          dgbPumps.reduce(
+            (total, pump) => total + (Number.isFinite(pump.substitutionPercentage) ? pump.substitutionPercentage : 0),
+            0,
+          ) / dgbPumps.length,
+        );
 
   return {
     totalInSet: inSet.length,
-    operativeCount: pumps.filter((pump) => pump.operationState === "operative").length,
-    nonOperativeCount: pumps.filter((pump) => pump.operationState === "non-operative")
-      .length,
-    benchCount: pumps.filter((pump) => pump.side === "bench").length,
+    operativeInSetCount: inSet.filter((pump) => pump.operationState === "operative").length,
+    operativeOutOfSetCount: outOfSet.filter((pump) => pump.operationState === "operative").length,
+    nonOperativeInSetCount: inSet.filter((pump) => pump.operationState === "non-operative").length,
+    nonOperativeOutOfSetCount: outOfSet.filter(
+      (pump) => pump.operationState === "non-operative",
+    ).length,
+    dgbSubstitutionPercentage,
   };
 }
 

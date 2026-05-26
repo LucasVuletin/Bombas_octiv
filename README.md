@@ -7,16 +7,17 @@ La app esta pensada para operacion local en Windows, en pantalla grande tactil d
 ## Funcionalidades incluidas
 
 - Header operativo con `OCTIV` y selector de `SET` del 1 al 6.
-- Botonera tactil para `Agregar bomba`, `Agregar manifold`, `Pantalla completa` y `Reset layout`.
+- Botonera tactil para `Agregar bomba`, `Agregar manifold`, `Pantalla completa`, `Guardar layout` y `Limpiar layout`.
 - Layout principal con manifolds centrales y bombas distribuidas a izquierda, derecha y bench.
 - Drag & drop compatible con mouse y touch usando `dnd-kit`.
-- Alta manual de bombas con validacion de `SAP`, estado, motivo y posicion.
+- Alta manual de bombas con validacion de `SAP`, estado, motivo libre, posicion y datos `DGB`.
 - Alta manual de manifolds con validacion de tipo y cantidad de bombas por lado.
-- Edicion manual de cada bomba mediante modal grande.
-- Tarjetas de bomba simplificadas: estado, motivo si corresponde, `SAP` y `Posicion`.
-- Lineas visuales sobrias hacia el manifold: celeste = limpio, marron = sucio, sin linea = desconectada.
-- Contadores operativos en la barra superior.
-- Guardado automatico en el navegador con `localStorage` para bombas, manifolds y set seleccionado.
+- Edicion manual de cada bomba mediante modal grande, incluida la opcion de borrarla.
+- Tarjetas de bomba simplificadas: estado, motivo si corresponde, `SAP`, `Posicion`, `DGB` y porcentaje de sustitucion.
+- Lineas visuales sobrias hacia el manifold: celeste, marron o sin linea.
+- Contadores operativos en/fuera del set y promedio del porcentaje de sustitucion DGB.
+- Selector persistido para visualizar `P/D/S` en 3 o 5 columnas.
+- Guardado automatico en el navegador con `localStorage` para bombas, manifolds, set seleccionado y columnas `P/D/S`.
 
 ## Requisitos
 
@@ -105,8 +106,9 @@ Ejemplo con ruta explicita:
 ## Persistencia local
 
 - Los cambios se guardan automaticamente en `localStorage`.
-- Se persisten bombas, manifolds y el `SET` seleccionado.
-- El boton `Reset layout` vuelve al layout inicial.
+- Se persisten bombas, manifolds, el `SET` seleccionado y la cantidad de columnas `P/D/S`.
+- El boton `Guardar layout` confirma que la configuracion actual queda almacenada en el equipo.
+- El boton `Limpiar layout` solicita confirmacion y elimina las bombas conservando los manifolds.
 - La informacion queda almacenada en el navegador del equipo donde se usa la app.
 
 ## Estructura del proyecto
@@ -162,5 +164,6 @@ src/
 - Para editar una bomba, toca o hace click sobre el cuerpo de la unidad.
 - Si soltas una bomba fuera del layout activo, vuelve a `Bombas disponibles / fuera del set`.
 - Las bombas nuevas se agregan primero al bench y luego pueden arrastrarse al set.
-- Si una bomba esta `No operativa`, el modal exige cargar un motivo.
+- Si una bomba esta `No operativa`, el modal exige escribir o seleccionar un motivo.
+- Las bombas `DGB` permiten cargar un porcentaje de sustitucion de 0 a 100.
 - Los manifolds nuevos se agregan al banco central y ajustan la capacidad visual del layout.

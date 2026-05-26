@@ -2,13 +2,14 @@ import { useDroppable } from "@dnd-kit/core";
 import { ConnectionLineTone } from "./ConnectionLineTone";
 import { PumpUnitCard } from "./PumpUnitCard";
 import { createSlotDropId, ManifoldSlot } from "../utils/layoutState";
-import { MANIFOLD_TYPE_META, Manifold, Pump } from "../models";
+import { MANIFOLD_TYPE_META, Manifold, Pump, PumpSignalColumnCount } from "../models";
 
 type PumpSlotProps = {
   manifold: Manifold;
   onSelectPump: (pumpId: string) => void;
   pump: Pump | null;
   position: number;
+  signalColumnCount: PumpSignalColumnCount;
   selectedPumpId: string | null;
   side: "left" | "right";
 };
@@ -17,6 +18,7 @@ function PumpSlot({
   manifold,
   pump,
   position,
+  signalColumnCount,
   side,
   selectedPumpId,
   onSelectPump,
@@ -35,6 +37,7 @@ function PumpSlot({
   const slotBody = pump ? (
     <PumpUnitCard
       pump={pump}
+      signalColumnCount={signalColumnCount}
       onSelect={onSelectPump}
       isSelected={selectedPumpId === pump.id}
     />
@@ -83,6 +86,7 @@ type ManifoldAssemblyProps = {
   onSelectPump: (pumpId: string) => void;
   rightSlots: ManifoldSlot[];
   selectedPumpId: string | null;
+  signalColumnCount: PumpSignalColumnCount;
 };
 
 export function ManifoldAssembly({
@@ -91,6 +95,7 @@ export function ManifoldAssembly({
   rightSlots,
   onSelectPump,
   selectedPumpId,
+  signalColumnCount,
 }: ManifoldAssemblyProps) {
   const typeMeta = MANIFOLD_TYPE_META[manifold.type];
 
@@ -117,6 +122,7 @@ export function ManifoldAssembly({
               manifold={manifold}
               pump={slot.pump}
               position={slot.position}
+              signalColumnCount={signalColumnCount}
               side="left"
               selectedPumpId={selectedPumpId}
               onSelectPump={onSelectPump}
@@ -151,6 +157,7 @@ export function ManifoldAssembly({
               manifold={manifold}
               pump={slot.pump}
               position={slot.position}
+              signalColumnCount={signalColumnCount}
               side="right"
               selectedPumpId={selectedPumpId}
               onSelectPump={onSelectPump}
