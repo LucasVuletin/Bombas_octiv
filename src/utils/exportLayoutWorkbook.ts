@@ -1,4 +1,5 @@
 import writeXlsxFile, { Cell, SheetData } from "write-excel-file/browser";
+import { APP_AUTHOR_NAME, APP_VERSION } from "../appIdentity";
 import {
   getNonOperationalReasonLabel,
   Manifold,
@@ -115,6 +116,7 @@ export async function exportLayoutWorkbook({
 
   const summaryData: SheetData = [
     [titleCell("OCTIV - Resumen de pozo y etapa", 4), null, null, null],
+    ["Desarrollado por", APP_AUTHOR_NAME, "Version", APP_VERSION],
     ["Exportado", dateCell(exportDate), "", ""],
     ["SET", selectedSet, "Modalidad", modeLabel],
     ["Pad", padLabel, "", ""],

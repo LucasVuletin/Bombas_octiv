@@ -12,6 +12,7 @@ import {
 import { startTransition, useEffect, useState } from "react";
 import { AddManifoldModal } from "./components/AddManifoldModal";
 import { AddPumpModal } from "./components/AddPumpModal";
+import { APP_AUTHOR_CREDIT, APP_VERSION_LABEL } from "./appIdentity";
 import { ControlHeader } from "./components/ControlHeader";
 import { LayoutWorkspace } from "./components/LayoutWorkspace";
 import { ManifoldEditModal } from "./components/ManifoldEditModal";
@@ -494,6 +495,23 @@ export default function AppShell() {
             selectedPumpId={selectedPumpId}
             onSelectPump={setSelectedPumpId}
           />
+
+          <footer
+            aria-label="Acerca de OCTIV"
+            className="flex flex-col gap-2 rounded-[1.5rem] border border-slate-800/80 bg-slate-950/35 px-5 py-4 text-slate-400 md:flex-row md:items-center md:justify-between"
+          >
+            <div>
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-slate-500">
+                Acerca de OCTIV
+              </p>
+              <p className="mt-1 text-sm font-semibold text-slate-300">
+                {APP_AUTHOR_CREDIT}
+              </p>
+            </div>
+            <p className="text-xs font-semibold tracking-[0.16em]">
+              {APP_VERSION_LABEL}
+            </p>
+          </footer>
 
           <PumpEditModal
             pump={selectedPump}

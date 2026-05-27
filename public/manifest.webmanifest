@@ -2,7 +2,7 @@
   "id": "/",
   "name": "OCTIV",
   "short_name": "OCTIV",
-  "description": "HMI tactil para layout de bombas de fractura y manifolds.",
+  "description": "HMI tactil para layout de bombas de fractura y manifolds. Desarrollado por Lucas Vuletin.",
   "lang": "es-AR",
   "start_url": "/",
   "scope": "/",

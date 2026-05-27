@@ -4,6 +4,12 @@ Aplicacion web tactil construida con `React + TypeScript + Vite + Tailwind CSS` 
 
 La app esta pensada para operacion local en Windows, en pantalla grande tactil de aproximadamente 32 pulgadas, sin backend y con persistencia en `localStorage`.
 
+## Autoria
+
+Desarrollado por Lucas Vuletin.
+
+La atribucion identifica al creador y desarrollador de esta version de la aplicacion en la interfaz, los metadatos del sitio y los archivos Excel exportados.
+
 ## Funcionalidades incluidas
 
 - Header operativo con `OCTIV` y selector de `SET` del 1 al 6.
@@ -19,6 +25,7 @@ La app esta pensada para operacion local en Windows, en pantalla grande tactil d
 - Cada bomba permite elegir en su editor si muestra `P/D/S` en 3 o 5 columnas.
 - Guardado automatico en el navegador con `localStorage` para bombas, manifolds y set seleccionado.
 - Vista movil con el mismo esquema izquierda / manifold / derecha del escritorio.
+- Firma de autoria visible en la aplicacion y en cada exportacion Excel.
 
 ## Requisitos
 

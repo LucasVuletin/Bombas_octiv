@@ -1,4 +1,5 @@
 import { SET_OPTIONS, SetNumber, WellStageContext } from "../models";
+import { APP_AUTHOR_CREDIT, APP_VERSION_LABEL } from "../appIdentity";
 import { WellStagePanel } from "./WellStagePanel";
 
 type ControlHeaderProps = {
@@ -81,6 +82,9 @@ export function ControlHeader({
           </p>
           <p className="mt-2 text-sm text-slate-300/78">
             Frac layout tactil para operacion local en modo kiosco.
+          </p>
+          <p className="mt-3 text-xs font-semibold tracking-[0.18em] text-slate-400">
+            {APP_AUTHOR_CREDIT} | {APP_VERSION_LABEL}
           </p>
         </div>
 
