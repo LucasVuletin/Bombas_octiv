@@ -14,13 +14,14 @@ import { AddManifoldModal } from "./components/AddManifoldModal";
 import { AddPumpModal } from "./components/AddPumpModal";
 import { ControlHeader } from "./components/ControlHeader";
 import { LayoutWorkspace } from "./components/LayoutWorkspace";
+import { ManifoldEditModal } from "./components/ManifoldEditModal";
 import { PumpEditModal } from "./components/PumpEditModal";
 import { PumpReserve } from "./components/PumpReserve";
 import { PumpUnitCard } from "./components/PumpUnitCard";
 import { createDefaultManifolds } from "./data/defaultManifolds";
 import { createDefaultPumps } from "./data/defaultPumps";
 import { useLocalStorage } from "./hooks/useLocalStorage";
-import { Manifold, Pump, PumpSignalColumnCount, SetNumber } from "./models";
+import { Manifold, Pump, SetNumber, WellStageContext } from "./models";
 import {
   applyPumpEdits,
   getBenchPumps,
@@ -28,12 +29,13 @@ import {
   movePumpToBench,
   parseSlotDropId,
   placePumpInSlot,
+  SlotTarget,
 } from "./utils/layoutState";
 
 const PUMPS_STORAGE_KEY = "halliburton-frac-layout-pumps-v2";
 const MANIFOLDS_STORAGE_KEY = "halliburton-frac-layout-manifolds-v2";
 const SET_STORAGE_KEY = "halliburton-frac-layout-selected-set-v1";
-const SIGNAL_COLUMNS_STORAGE_KEY = "halliburton-frac-layout-signal-columns-v1";
+const WELL_STAGE_STORAGE_KEY = "halliburton-frac-layout-well-stage-v1";
 
 function getFullscreenState() {
   return typeof document !== "undefined" && Boolean(document.fullscreenElement);
@@ -41,6 +43,10 @@ function getFullscreenState() {
 
 function findPump(pumps: Pump[], pumpId: string | null) {
   return pumps.find((pump) => pump.id === pumpId) ?? null;
+}
+
+function findManifold(manifolds: Manifold[], manifoldId: string | null) {
+  return manifolds.find((manifold) => manifold.id === manifoldId) ?? null;
 }
 
 function createEntityId(prefix: string) {
@@ -56,6 +62,21 @@ function createManifoldLabel(manifolds: Manifold[], type: Manifold["type"]) {
   const prefix = type === "clean" ? "MFC" : "MFD";
 
   return `${prefix}-${String(nextIndex).padStart(2, "0")}`;
+}
+
+function createEmptyWellStageContext(): WellStageContext {
+  return {
+    mode: "single",
+    pad: "",
+    primary: {
+      well: "",
+      stage: "",
+    },
+    secondary: {
+      well: "",
+      stage: "",
+    },
+  };
 }
 
 export default function AppShell() {
@@ -74,16 +95,19 @@ export default function AppShell() {
     1,
     1,
   );
-  const [signalColumnCount, setSignalColumnCount] = useLocalStorage<PumpSignalColumnCount>(
-    SIGNAL_COLUMNS_STORAGE_KEY,
-    3,
+  const [stageContext, setStageContext] = useLocalStorage<WellStageContext>(
+    WELL_STAGE_STORAGE_KEY,
+    createEmptyWellStageContext,
     1,
   );
   const [selectedPumpId, setSelectedPumpId] = useState<string | null>(null);
+  const [selectedManifoldId, setSelectedManifoldId] = useState<string | null>(null);
+  const [addPumpTarget, setAddPumpTarget] = useState<SlotTarget | null>(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(getFullscreenState);
   const [isAddPumpOpen, setIsAddPumpOpen] = useState(false);
   const [isAddManifoldOpen, setIsAddManifoldOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [layoutNotice, setLayoutNotice] = useState<string | null>(null);
 
   const sensors = useSensors(
@@ -119,7 +143,9 @@ export default function AppShell() {
           typeof pump.isDgb !== "boolean" ||
           !Number.isInteger(pump.substitutionPercentage) ||
           pump.substitutionPercentage < 0 ||
-          pump.substitutionPercentage > 100,
+          pump.substitutionPercentage > 100 ||
+          typeof pump.substitutionError !== "string" ||
+          (pump.signalColumnCount !== 3 && pump.signalColumnCount !== 5),
       );
 
       if (!needsDgbDefaults) {
@@ -136,6 +162,11 @@ export default function AppShell() {
           pump.substitutionPercentage <= 100
             ? pump.substitutionPercentage
             : 0,
+        substitutionError:
+          pump.isDgb === true && typeof pump.substitutionError === "string"
+            ? pump.substitutionError
+            : "",
+        signalColumnCount: pump.signalColumnCount === 5 ? 5 : 3,
       }));
     });
   }, [setPumps]);
@@ -157,9 +188,8 @@ export default function AppShell() {
   const benchPumps = getBenchPumps(pumps);
   const stats = getPumpStats(pumps);
   const selectedPump = findPump(pumps, selectedPumpId);
+  const selectedManifold = findManifold(manifolds, selectedManifoldId);
   const activePump = findPump(pumps, activeDragId);
-  const visibleSignalColumnCount: PumpSignalColumnCount =
-    signalColumnCount === 5 ? 5 : 3;
 
   function handleDragStart(event: DragStartEvent) {
     const pumpId = String(event.active.id);
@@ -259,36 +289,45 @@ export default function AppShell() {
     sap: string;
     operationState: Pump["operationState"];
     nonOperationalReason: Pump["nonOperationalReason"];
-    position: number;
     isDgb: boolean;
     substitutionPercentage: number;
+    substitutionError: string;
+    signalColumnCount: Pump["signalColumnCount"];
     signals: Pump["signals"];
   }) {
-    startTransition(() => {
-      setPumps((currentPumps) => {
-        const benchCount = currentPumps.filter((pump) => pump.side === "bench").length;
+    const benchCount = pumps.filter((pump) => pump.side === "bench").length;
+    const newPump: Pump = {
+      id: createEntityId("pump"),
+      sap: values.sap,
+      side: "bench",
+      manifoldId: null,
+      row: benchCount,
+      connection: "none",
+      operationState: values.operationState,
+      nonOperationalReason: values.nonOperationalReason,
+      position: benchCount + 1,
+      isDgb: values.isDgb,
+      substitutionPercentage: values.substitutionPercentage,
+      substitutionError: values.substitutionError,
+      signalColumnCount: values.signalColumnCount,
+      signals: values.signals,
+    };
+    const nextPumps = [...pumps, newPump];
+    const placementResult = addPumpTarget
+      ? placePumpInSlot(nextPumps, manifolds, newPump.id, addPumpTarget)
+      : { error: null, pumps: nextPumps };
 
-        return [
-          ...currentPumps,
-          {
-            id: createEntityId("pump"),
-            sap: values.sap,
-            side: "bench",
-            manifoldId: null,
-            row: benchCount,
-            connection: "none",
-            operationState: values.operationState,
-            nonOperationalReason: values.nonOperationalReason,
-            position: values.position,
-            isDgb: values.isDgb,
-            substitutionPercentage: values.substitutionPercentage,
-            signals: values.signals,
-          },
-        ];
-      });
+    if (placementResult.error) {
+      setLayoutNotice(placementResult.error);
+      return;
+    }
+
+    startTransition(() => {
+      setPumps(placementResult.pumps);
     });
 
-    setLayoutNotice(null);
+    setLayoutNotice(addPumpTarget ? "Bomba agregada al slot seleccionado." : null);
+    setAddPumpTarget(null);
     setIsAddPumpOpen(false);
   }
 
@@ -310,6 +349,40 @@ export default function AppShell() {
 
     setLayoutNotice(null);
     setIsAddManifoldOpen(false);
+  }
+
+  function handleSaveManifold(updatedManifold: Manifold) {
+    const occupiedPositions = pumps
+      .filter(
+        (pump) => pump.side !== "bench" && pump.manifoldId === updatedManifold.id,
+      )
+      .map((pump) => pump.position);
+    const highestOccupiedPosition =
+      occupiedPositions.length > 0 ? Math.max(...occupiedPositions) : 0;
+
+    if (updatedManifold.pumpsPerSide < highestOccupiedPosition) {
+      return `No se pueden reducir los slots a ${updatedManifold.pumpsPerSide}: hay una bomba en el slot ${highestOccupiedPosition}.`;
+    }
+
+    startTransition(() => {
+      setManifolds((currentManifolds) =>
+        currentManifolds.map((manifold) =>
+          manifold.id === updatedManifold.id ? updatedManifold : manifold,
+        ),
+      );
+      setPumps((currentPumps) =>
+        currentPumps.map((pump) =>
+          pump.manifoldId === updatedManifold.id && pump.connection !== "none"
+            ? { ...pump, connection: updatedManifold.type }
+            : pump,
+        ),
+      );
+    });
+
+    setSelectedManifoldId(null);
+    setLayoutNotice("Manifold actualizado.");
+
+    return null;
   }
 
   function handleSaveLayout() {
@@ -334,10 +407,33 @@ export default function AppShell() {
     });
 
     setSelectedPumpId(null);
+    setSelectedManifoldId(null);
+    setAddPumpTarget(null);
     setActiveDragId(null);
     setIsAddPumpOpen(false);
     setIsAddManifoldOpen(false);
     setLayoutNotice("Layout limpio. Se conservaron los manifolds y se borraron las bombas.");
+  }
+
+  async function handleDownloadExcel() {
+    setIsExporting(true);
+
+    try {
+      const { exportLayoutWorkbook } = await import("./utils/exportLayoutWorkbook");
+      const fileName = await exportLayoutWorkbook({
+        manifolds,
+        pumps,
+        selectedSet,
+        stageContext,
+      });
+
+      setLayoutNotice(`Excel descargado: ${fileName}`);
+    } catch (error) {
+      console.warn("No se pudo generar el archivo Excel:", error);
+      setLayoutNotice("No se pudo generar el archivo Excel.");
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   return (
@@ -352,35 +448,49 @@ export default function AppShell() {
         <main className="mx-auto flex min-h-screen w-full max-w-[1920px] flex-col gap-5 px-4 py-4 md:px-6 md:py-6 xl:px-8">
           <ControlHeader
             selectedSet={selectedSet}
-            signalColumnCount={visibleSignalColumnCount}
             totalInSet={stats.totalInSet}
             operativeInSetCount={stats.operativeInSetCount}
             operativeOutOfSetCount={stats.operativeOutOfSetCount}
             nonOperativeInSetCount={stats.nonOperativeInSetCount}
             nonOperativeOutOfSetCount={stats.nonOperativeOutOfSetCount}
+            dgbInSetCount={stats.dgbInSetCount}
+            nonDgbInSetCount={stats.nonDgbInSetCount}
+            substitutingDgbInSetCount={stats.substitutingDgbInSetCount}
+            nonSubstitutingDgbInSetCount={stats.nonSubstitutingDgbInSetCount}
             dgbSubstitutionPercentage={stats.dgbSubstitutionPercentage}
+            stageContext={stageContext}
             onSetChange={setSelectedSet}
-            onSignalColumnCountChange={setSignalColumnCount}
-            onOpenAddPump={() => setIsAddPumpOpen(true)}
+            onStageContextChange={setStageContext}
+            onOpenAddPump={() => {
+              setAddPumpTarget(null);
+              setIsAddPumpOpen(true);
+            }}
             onOpenAddManifold={() => setIsAddManifoldOpen(true)}
             onSaveLayout={handleSaveLayout}
             onClearLayout={handleClearLayout}
+            onDownloadExcel={() => {
+              void handleDownloadExcel();
+            }}
             onToggleFullscreen={handleToggleFullscreen}
+            isExporting={isExporting}
             isFullscreen={isFullscreen}
           />
 
           <LayoutWorkspace
             pumps={pumps}
             manifolds={manifolds}
-            signalColumnCount={visibleSignalColumnCount}
             notice={layoutNotice}
             selectedPumpId={selectedPumpId}
+            onAddPumpToSlot={(target) => {
+              setAddPumpTarget(target);
+              setIsAddPumpOpen(true);
+            }}
+            onEditManifold={setSelectedManifoldId}
             onSelectPump={setSelectedPumpId}
           />
 
           <PumpReserve
             pumps={benchPumps}
-            signalColumnCount={visibleSignalColumnCount}
             selectedPumpId={selectedPumpId}
             onSelectPump={setSelectedPumpId}
           />
@@ -392,9 +502,25 @@ export default function AppShell() {
             onSave={handleSavePump}
           />
 
+          <ManifoldEditModal
+            manifold={selectedManifold}
+            onClose={() => setSelectedManifoldId(null)}
+            onSave={handleSaveManifold}
+          />
+
           <AddPumpModal
+            destinationMessage={
+              addPumpTarget
+                ? `La bomba nueva se ubicara directamente en el slot ${addPumpTarget.position} del lado ${
+                    addPumpTarget.side === "left" ? "izquierdo" : "derecho"
+                  }.`
+                : null
+            }
             isOpen={isAddPumpOpen}
-            onClose={() => setIsAddPumpOpen(false)}
+            onClose={() => {
+              setAddPumpTarget(null);
+              setIsAddPumpOpen(false);
+            }}
             onAddPump={handleAddPump}
           />
 
@@ -411,7 +537,6 @@ export default function AppShell() {
           <div className="w-[24rem] max-w-[90vw] opacity-95">
             <PumpUnitCard
               pump={activePump}
-              signalColumnCount={visibleSignalColumnCount}
               onSelect={() => undefined}
               draggable={false}
               isOverlay

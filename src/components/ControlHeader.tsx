@@ -1,38 +1,38 @@
-import {
-  PUMP_SIGNAL_COLUMN_OPTIONS,
-  PumpSignalColumnCount,
-  SET_OPTIONS,
-  SetNumber,
-} from "../models";
+import { SET_OPTIONS, SetNumber, WellStageContext } from "../models";
+import { WellStagePanel } from "./WellStagePanel";
 
 type ControlHeaderProps = {
   selectedSet: SetNumber;
-  signalColumnCount: PumpSignalColumnCount;
   totalInSet: number;
   operativeInSetCount: number;
   operativeOutOfSetCount: number;
   nonOperativeInSetCount: number;
   nonOperativeOutOfSetCount: number;
+  dgbInSetCount: number;
+  nonDgbInSetCount: number;
+  substitutingDgbInSetCount: number;
+  nonSubstitutingDgbInSetCount: number;
   dgbSubstitutionPercentage: number;
+  stageContext: WellStageContext;
   onSetChange: (setNumber: SetNumber) => void;
-  onSignalColumnCountChange: (columnCount: PumpSignalColumnCount) => void;
+  onStageContextChange: (context: WellStageContext) => void;
   onOpenAddPump: () => void;
   onOpenAddManifold: () => void;
   onSaveLayout: () => void;
   onClearLayout: () => void;
+  onDownloadExcel: () => void;
   onToggleFullscreen: () => void;
+  isExporting: boolean;
   isFullscreen: boolean;
 };
 
 function MetricCard({
   label,
   value,
-  accentClass,
   suffix = "",
 }: {
   label: string;
   value: number;
-  accentClass: string;
   suffix?: string;
 }) {
   return (
@@ -40,7 +40,7 @@ function MetricCard({
       <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
         {label}
       </p>
-      <p className={`mt-2 text-3xl font-semibold ${accentClass}`}>
+      <p className="mt-2 text-3xl font-semibold text-slate-50">
         {value}
         {suffix}
       </p>
@@ -50,20 +50,26 @@ function MetricCard({
 
 export function ControlHeader({
   selectedSet,
-  signalColumnCount,
   totalInSet,
   operativeInSetCount,
   operativeOutOfSetCount,
   nonOperativeInSetCount,
   nonOperativeOutOfSetCount,
+  dgbInSetCount,
+  nonDgbInSetCount,
+  substitutingDgbInSetCount,
+  nonSubstitutingDgbInSetCount,
   dgbSubstitutionPercentage,
+  stageContext,
   onSetChange,
-  onSignalColumnCountChange,
+  onStageContextChange,
   onOpenAddPump,
   onOpenAddManifold,
   onSaveLayout,
   onClearLayout,
+  onDownloadExcel,
   onToggleFullscreen,
+  isExporting,
   isFullscreen,
 }: ControlHeaderProps) {
   return (
@@ -96,53 +102,37 @@ export function ControlHeader({
             </select>
           </label>
 
-          <label className="flex items-center gap-3 rounded-[1.5rem] border border-slate-700/70 bg-slate-950/55 px-4 py-3">
-            <span className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-300">
-              P/D/S
-            </span>
-            <select
-              value={signalColumnCount}
-              onChange={(event) =>
-                onSignalColumnCountChange(Number(event.target.value) as PumpSignalColumnCount)
-              }
-              className="min-h-14 rounded-2xl border border-slate-700/70 bg-slate-900/85 px-4 text-lg font-semibold text-slate-50 outline-none transition focus:border-[#7FB3C8]/60 focus:ring-2 focus:ring-[#7FB3C8]/20"
-            >
-              {PUMP_SIGNAL_COLUMN_OPTIONS.map((columnCount) => (
-                <option key={columnCount} value={columnCount}>
-                  {columnCount} columnas
-                </option>
-              ))}
-            </select>
-          </label>
         </div>
       </div>
+
+      <WellStagePanel context={stageContext} onChange={onStageContextChange} />
 
       <div className="mt-5 flex flex-wrap gap-3">
         <button
           type="button"
           onClick={onOpenAddPump}
-          className="min-h-14 rounded-2xl border border-[#7FB3C8]/35 bg-[#7FB3C8]/12 px-5 text-base font-semibold text-slate-50 transition hover:border-[#7FB3C8]/55 hover:bg-[#7FB3C8]/16"
+          className="min-h-14 rounded-2xl border border-slate-600/70 bg-slate-950/80 px-5 text-base font-semibold text-slate-200 transition hover:border-rose-300/35 hover:text-rose-100"
         >
           Agregar bomba
         </button>
         <button
           type="button"
           onClick={onOpenAddManifold}
-          className="min-h-14 rounded-2xl border border-[#8B6A4A]/35 bg-[#8B6A4A]/12 px-5 text-base font-semibold text-slate-50 transition hover:border-[#8B6A4A]/55 hover:bg-[#8B6A4A]/16"
+          className="min-h-14 rounded-2xl border border-slate-600/70 bg-slate-950/80 px-5 text-base font-semibold text-slate-200 transition hover:border-rose-300/35 hover:text-rose-100"
         >
           Agregar manifold
         </button>
         <button
           type="button"
           onClick={onToggleFullscreen}
-          className="min-h-14 rounded-2xl border border-slate-600/70 bg-slate-900/85 px-5 text-base font-semibold text-slate-100 transition hover:border-slate-500/70 hover:text-white"
+          className="min-h-14 rounded-2xl border border-slate-600/70 bg-slate-950/80 px-5 text-base font-semibold text-slate-200 transition hover:border-rose-300/35 hover:text-rose-100"
         >
           {isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
         </button>
         <button
           type="button"
           onClick={onSaveLayout}
-          className="min-h-14 rounded-2xl border border-emerald-300/30 bg-emerald-500/10 px-5 text-base font-semibold text-emerald-100 transition hover:border-emerald-300/50 hover:bg-emerald-500/16"
+          className="min-h-14 rounded-2xl border border-slate-600/70 bg-slate-950/80 px-5 text-base font-semibold text-slate-200 transition hover:border-rose-300/35 hover:text-rose-100"
         >
           Guardar layout
         </button>
@@ -153,39 +143,57 @@ export function ControlHeader({
         >
           Limpiar layout
         </button>
+        <button
+          type="button"
+          onClick={onDownloadExcel}
+          disabled={isExporting}
+          className="min-h-14 rounded-2xl border border-slate-600/70 bg-slate-950/80 px-5 text-base font-semibold text-slate-200 transition hover:border-rose-300/35 hover:text-rose-100 disabled:cursor-wait disabled:opacity-55"
+        >
+          {isExporting ? "Preparando Excel..." : "Descargar Excel"}
+        </button>
       </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-[repeat(6,minmax(0,1fr))]">
+      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-[repeat(5,minmax(0,1fr))]">
         <MetricCard
           label="Bombas en set"
           value={totalInSet}
-          accentClass="text-slate-100"
         />
         <MetricCard
           label="Operativas en set"
           value={operativeInSetCount}
-          accentClass="text-emerald-300"
         />
         <MetricCard
           label="Operativas fuera de set"
           value={operativeOutOfSetCount}
-          accentClass="text-emerald-200"
         />
         <MetricCard
           label="No operativas en set"
           value={nonOperativeInSetCount}
-          accentClass="text-[#E8D4BE]"
         />
         <MetricCard
           label="No operativas fuera de set"
           value={nonOperativeOutOfSetCount}
-          accentClass="text-amber-100"
         />
         <MetricCard
           label="Sustitucion DGB"
           value={dgbSubstitutionPercentage}
           suffix="%"
-          accentClass="text-[#B8D0DB]"
+        />
+        <MetricCard
+          label="Bombas con DGB"
+          value={dgbInSetCount}
+        />
+        <MetricCard
+          label="Bombas sin DGB"
+          value={nonDgbInSetCount}
+        />
+        <MetricCard
+          label="Bombas sustituyendo"
+          value={substitutingDgbInSetCount}
+        />
+        <MetricCard
+          label="Bombas sin sustituir"
+          value={nonSubstitutingDgbInSetCount}
         />
       </div>
     </header>

@@ -226,6 +226,8 @@ export function createDefaultPumps(): Pump[] {
       position: pump.position,
       isDgb: false,
       substitutionPercentage: 0,
+      substitutionError: "",
+      signalColumnCount: 3,
       signals: createMockSignals(),
     };
   });

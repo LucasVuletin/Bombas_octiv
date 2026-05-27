@@ -10,15 +10,17 @@ import {
 } from "../utils/validation";
 
 type AddPumpModalProps = {
+  destinationMessage?: string | null;
   isOpen: boolean;
   onClose: () => void;
   onAddPump: (values: {
     sap: string;
     operationState: Pump["operationState"];
     nonOperationalReason: Pump["nonOperationalReason"];
-    position: number;
     isDgb: boolean;
     substitutionPercentage: number;
+    substitutionError: string;
+    signalColumnCount: Pump["signalColumnCount"];
     signals: {
       p: number;
       d: number;
@@ -34,9 +36,10 @@ function createInitialValues(): PumpFormValues {
     sap: "",
     operationState: "",
     nonOperationalReason: "",
-    position: "",
     isDgb: false,
     substitutionPercentage: "0",
+    substitutionError: "",
+    signalColumnCount: 3,
     connection: "none",
     pValue: String(signals.p),
     dValue: String(signals.d),
@@ -44,7 +47,12 @@ function createInitialValues(): PumpFormValues {
   };
 }
 
-export function AddPumpModal({ isOpen, onClose, onAddPump }: AddPumpModalProps) {
+export function AddPumpModal({
+  destinationMessage = null,
+  isOpen,
+  onClose,
+  onAddPump,
+}: AddPumpModalProps) {
   const [values, setValues] = useState<PumpFormValues>(createInitialValues);
   const [errors, setErrors] = useState<PumpFormErrors>({});
 
@@ -86,11 +94,6 @@ export function AddPumpModal({ isOpen, onClose, onAddPump }: AddPumpModalProps) 
         return nextValues;
       }
 
-      if (field === "position") {
-        nextValues.position = String(value).replace(/[^\d]/g, "").slice(0, 2);
-        return nextValues;
-      }
-
       if (field === "substitutionPercentage") {
         nextValues.substitutionPercentage = String(value).replace(/[^\d]/g, "").slice(0, 3);
         return nextValues;
@@ -101,6 +104,7 @@ export function AddPumpModal({ isOpen, onClose, onAddPump }: AddPumpModalProps) 
 
         if (!nextValues.isDgb) {
           nextValues.substitutionPercentage = "0";
+          nextValues.substitutionError = "";
         }
 
         return nextValues;
@@ -152,9 +156,10 @@ export function AddPumpModal({ isOpen, onClose, onAddPump }: AddPumpModalProps) 
         values.operationState === "non-operative"
           ? values.nonOperationalReason.trim()
           : null,
-      position: validation.parsedPosition,
       isDgb: values.isDgb,
       substitutionPercentage: validation.parsedSubstitutionPercentage,
+      substitutionError: values.isDgb ? values.substitutionError.trim() : "",
+      signalColumnCount: values.signalColumnCount,
       signals: {
         p: validation.parsedPValue,
         d: validation.parsedDValue,
@@ -165,7 +170,7 @@ export function AddPumpModal({ isOpen, onClose, onAddPump }: AddPumpModalProps) 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/72 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/72 p-4 backdrop-blur-sm md:items-center"
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           onClose();
@@ -173,16 +178,16 @@ export function AddPumpModal({ isOpen, onClose, onAddPump }: AddPumpModalProps) 
       }}
       role="presentation"
     >
-      <div className="hmi-panel w-full max-w-3xl rounded-[2rem] border-slate-600/70 bg-slate-950/94">
-        <div className="flex items-start justify-between gap-4 border-b border-slate-800/80 px-6 py-5">
+      <div className="hmi-panel my-2 w-full max-w-3xl rounded-[2rem] border-slate-600/70 bg-slate-950/94 md:my-0">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 rounded-t-[2rem] border-b border-slate-800/80 bg-slate-950/95 px-6 py-5">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
               Menu principal
             </p>
             <h2 className="mt-2 text-3xl text-slate-50">Agregar bomba</h2>
             <p className="mt-2 max-w-xl text-base text-slate-300/78">
-              La bomba nueva entra al banco de disponibles y luego puede moverse con
-              drag and drop al set activo.
+              {destinationMessage ??
+                "La bomba nueva entra al banco de disponibles y luego puede moverse con drag and drop al set activo."}
             </p>
           </div>
 

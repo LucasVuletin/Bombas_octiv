@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CONNECTION_META, Pump, SIDE_LABELS } from "../models";
+import { Pump } from "../models";
 import { PumpFormFields } from "./PumpFormFields";
 import {
   PumpFormErrors,
@@ -21,9 +21,10 @@ function getInitialValues(pump: Pump | null): PumpFormValues {
       sap: "",
       operationState: "",
       nonOperationalReason: "",
-      position: "",
       isDgb: false,
       substitutionPercentage: "0",
+      substitutionError: "",
+      signalColumnCount: 3,
       connection: "none",
       pValue: "",
       dValue: "",
@@ -35,23 +36,15 @@ function getInitialValues(pump: Pump | null): PumpFormValues {
     sap: pump.sap,
     operationState: pump.operationState,
     nonOperationalReason: pump.nonOperationalReason ?? "",
-    position: String(pump.position),
     isDgb: pump.isDgb === true,
     substitutionPercentage: String(pump.substitutionPercentage ?? 0),
+    substitutionError: pump.substitutionError ?? "",
+    signalColumnCount: pump.signalColumnCount === 5 ? 5 : 3,
     connection: pump.connection,
     pValue: String(pump.signals.p),
     dValue: String(pump.signals.d),
     sValue: String(pump.signals.s),
   };
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[1.25rem] border border-slate-700/70 bg-slate-950/60 p-4">
-      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">{label}</p>
-      <p className="mt-2 text-lg text-slate-50">{value}</p>
-    </div>
-  );
 }
 
 export function PumpEditModal({ pump, onClose, onDelete, onSave }: PumpEditModalProps) {
@@ -101,11 +94,6 @@ export function PumpEditModal({ pump, onClose, onDelete, onSave }: PumpEditModal
         return nextValues;
       }
 
-      if (field === "position") {
-        nextValues.position = String(value).replace(/[^\d]/g, "").slice(0, 2);
-        return nextValues;
-      }
-
       if (field === "substitutionPercentage") {
         nextValues.substitutionPercentage = String(value).replace(/[^\d]/g, "").slice(0, 3);
         return nextValues;
@@ -116,6 +104,7 @@ export function PumpEditModal({ pump, onClose, onDelete, onSave }: PumpEditModal
 
         if (!nextValues.isDgb) {
           nextValues.substitutionPercentage = "0";
+          nextValues.substitutionError = "";
         }
 
         return nextValues;
@@ -173,9 +162,10 @@ export function PumpEditModal({ pump, onClose, onDelete, onSave }: PumpEditModal
         values.operationState === "non-operative"
           ? values.nonOperationalReason.trim()
           : null,
-      position: validation.parsedPosition,
       isDgb: values.isDgb,
       substitutionPercentage: validation.parsedSubstitutionPercentage,
+      substitutionError: values.isDgb ? values.substitutionError.trim() : "",
+      signalColumnCount: values.signalColumnCount,
       connection: pump.side === "bench" ? "none" : values.connection,
       signals: {
         p: validation.parsedPValue,
@@ -199,7 +189,7 @@ export function PumpEditModal({ pump, onClose, onDelete, onSave }: PumpEditModal
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/72 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/72 p-4 backdrop-blur-sm md:items-center"
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           onClose();
@@ -207,8 +197,8 @@ export function PumpEditModal({ pump, onClose, onDelete, onSave }: PumpEditModal
       }}
       role="presentation"
     >
-      <div className="hmi-panel w-full max-w-5xl rounded-[2rem] border-slate-600/70 bg-slate-950/94">
-        <div className="flex items-start justify-between gap-4 border-b border-slate-800/80 px-6 py-5">
+      <div className="hmi-panel my-2 w-full max-w-5xl rounded-[2rem] border-slate-600/70 bg-slate-950/94 md:my-0">
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 rounded-t-[2rem] border-b border-slate-800/80 bg-slate-950/95 px-6 py-5">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
               Editor tactil
@@ -230,7 +220,7 @@ export function PumpEditModal({ pump, onClose, onDelete, onSave }: PumpEditModal
           </button>
         </div>
 
-        <div className="grid gap-6 px-6 py-6 xl:grid-cols-[minmax(0,1fr)_18rem]">
+        <div className="px-6 py-6">
           <PumpFormFields
             values={values}
             errors={errors}
@@ -238,19 +228,6 @@ export function PumpEditModal({ pump, onClose, onDelete, onSave }: PumpEditModal
             showSignals
             onChange={updateField}
           />
-
-          <aside className="space-y-4 rounded-[1.6rem] border border-slate-700/70 bg-slate-900/72 p-5">
-            <SummaryRow label="Zona actual" value={SIDE_LABELS[pump.side]} />
-            <SummaryRow label="Posicion actual" value={String(pump.position)} />
-            <SummaryRow
-              label="DGB / Sustitucion"
-              value={values.isDgb ? `Si / ${values.substitutionPercentage || "0"}%` : "No / 0%"}
-            />
-            <SummaryRow
-              label="Linea actual"
-              value={CONNECTION_META[pump.side === "bench" ? "none" : values.connection].label}
-            />
-          </aside>
         </div>
 
         {saveError ? (

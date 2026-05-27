@@ -4,13 +4,11 @@ import {
   getNonOperationalReasonLabel,
   PUMP_OPERATION_META,
   Pump,
-  PumpSignalColumnCount,
 } from "../models";
 import { PumpSignalGrid } from "./PumpSignalGrid";
 
 type PumpUnitCardProps = {
   pump: Pump;
-  signalColumnCount: PumpSignalColumnCount;
   onSelect: (pumpId: string) => void;
   isSelected?: boolean;
   draggable?: boolean;
@@ -41,7 +39,6 @@ function DragHandleIcon() {
 
 export function PumpUnitCard({
   pump,
-  signalColumnCount,
   onSelect,
   isSelected = false,
   draggable = true,
@@ -55,6 +52,7 @@ export function PumpUnitCard({
   const substitutionPercentage = Number.isFinite(pump.substitutionPercentage)
     ? pump.substitutionPercentage
     : 0;
+  const signalColumnCount = pump.signalColumnCount === 5 ? 5 : 3;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: pump.id,
     disabled: !draggable,
@@ -71,90 +69,82 @@ export function PumpUnitCard({
     <article
       ref={draggable ? setNodeRef : undefined}
       style={transformStyle}
+      role={isOverlay ? undefined : "button"}
+      tabIndex={isOverlay ? undefined : 0}
+      aria-label={isOverlay ? undefined : `Editar bomba ${pump.sap}`}
+      onClick={isOverlay ? undefined : () => onSelect(pump.id)}
+      onKeyDown={
+        isOverlay
+          ? undefined
+          : (event) => {
+              if (
+                event.target === event.currentTarget &&
+                (event.key === "Enter" || event.key === " ")
+              ) {
+                event.preventDefault();
+                onSelect(pump.id);
+              }
+            }
+      }
       className={[
-        "pump-shell relative flex h-[9.25rem] w-full items-stretch",
+        "pump-shell relative flex h-[10.5rem] w-full items-stretch xl:h-[11.25rem]",
         isSelected ? "ring-2 ring-[#7FB3C8]/55" : "ring-1 ring-white/5",
         isOverlay ? "shadow-[0_28px_90px_rgba(2,6,23,0.6)]" : "",
         draggable && isDragging ? "opacity-30" : "",
       ].join(" ")}
     >
-      <span className="pump-wheel left-12" />
-      <span className="pump-wheel left-[7.65rem]" />
-
-      <button
-        type="button"
-        onClick={() => onSelect(pump.id)}
-        className="relative z-10 flex min-w-0 flex-1 px-5 py-2.5 text-left"
-      >
-        <div className="flex h-full min-w-0 w-full flex-col rounded-[1.35rem] border border-white/10 bg-slate-950/44 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-[2px]">
-          <div className="grid grid-cols-[minmax(0,5.6rem)_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-white/8 pb-1.5">
-            <div className="min-w-0">
-              <p className="text-[8px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                SAP
+      <div className="relative z-10 flex min-w-0 flex-1 p-2 text-left sm:p-3.5 xl:p-4">
+        <div className="flex h-full min-w-0 w-full flex-col">
+          <div className="shrink-0 border-b border-white/8 pb-2">
+            <div className="grid h-[4rem] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-x-0.5 overflow-hidden font-semibold leading-tight sm:h-[3.5rem] sm:gap-x-2 xl:h-[3.25rem]">
+              <p className={`self-center whitespace-nowrap text-[10px] leading-none sm:text-[13px] xl:text-sm ${operationMeta.accentClass}`}>
+                {operationMeta.cardLabel}
               </p>
-              <p className="truncate font-mono text-[1.35rem] font-bold leading-none tracking-[0.14em] text-slate-50">
+              <p className="truncate self-center text-center font-mono text-lg font-bold leading-none tracking-[0.1em] text-slate-50 sm:text-[1.35rem] xl:text-[1.55rem] xl:tracking-[0.14em]">
                 {pump.sap}
               </p>
-            </div>
-
-            <div className="flex min-w-0 items-center gap-1.5 leading-tight">
-              <span
-                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/10 ${operationMeta.dotClass}`}
-              >
-                <span className="h-2 w-2 rounded-full bg-slate-950/45" />
-              </span>
-              <span className={`shrink-0 text-[11px] font-semibold ${operationMeta.accentClass}`}>
-                {operationMeta.cardLabel}
-              </span>
+              <p className="truncate self-center whitespace-nowrap text-right text-[10px] leading-none text-[#B8D0DB] sm:text-[13px] xl:text-sm">
+                DGB: {isDgb ? `${substitutionPercentage}%` : "No"}
+              </p>
               {reasonLabel ? (
-                <span className="truncate text-[10px] uppercase tracking-[0.1em] text-slate-300/82">
-                  Motivo: {reasonLabel}
-                </span>
+                <p className="col-start-1 mt-1 line-clamp-2 break-words text-[10px] leading-[1.05] text-slate-200/90 sm:text-xs xl:text-sm" title={reasonLabel}>
+                  {reasonLabel}
+                </p>
               ) : null}
-            </div>
-
-            <div className="flex shrink-0 gap-2 text-right">
-              <div>
-                <p className="text-[8px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  Posicion
+              {isDgb && pump.substitutionError.trim() ? (
+                <p
+                  className="col-start-3 mt-1 line-clamp-2 break-words text-right text-[10px] leading-[1.05] text-amber-100 sm:text-xs xl:text-sm"
+                  title={`Error: ${pump.substitutionError}`}
+                >
+                  Error: {pump.substitutionError}
                 </p>
-                <p className="text-sm font-semibold leading-none text-slate-100">
-                  {pump.position}
-                </p>
-              </div>
-              <div className="min-w-10 border-l border-white/10 pl-2">
-                <p className="text-[8px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  DGB
-                </p>
-                <p className="text-sm font-semibold leading-none text-[#B8D0DB]">
-                  {isDgb ? `${substitutionPercentage}%` : "No"}
-                </p>
-              </div>
+              ) : null}
             </div>
           </div>
 
-          <div className="flex min-h-0 flex-1 items-center pt-1.5">
+          <div className="flex min-h-0 flex-1 items-start gap-2 pt-2">
             <PumpSignalGrid
               signals={pump.signals}
               columnCount={signalColumnCount}
               compact
-              className="w-full min-w-0"
+              className="min-w-0 flex-1 pb-0.5"
             />
+
+            {draggable ? (
+              <button
+                type="button"
+                aria-label={`Arrastrar bomba ${pump.sap}`}
+                className="z-20 mt-[1.35rem] flex h-8 w-8 shrink-0 touch-none items-center justify-center rounded-xl border border-slate-600/70 bg-slate-950/80 text-slate-200 transition hover:border-slate-400/70 hover:text-white sm:mt-5 xl:mt-14"
+                {...listeners}
+                {...attributes}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <DragHandleIcon />
+              </button>
+            ) : null}
           </div>
         </div>
-      </button>
-
-      {draggable ? (
-        <button
-          type="button"
-          aria-label={`Arrastrar bomba ${pump.sap}`}
-          className="relative z-10 my-3 mr-3 flex w-16 shrink-0 touch-none items-center justify-center rounded-[1.25rem] border border-slate-700/70 bg-slate-950/55 text-slate-200 transition hover:border-[#7FB3C8]/35 hover:text-white"
-          {...listeners}
-          {...attributes}
-        >
-          <DragHandleIcon />
-        </button>
-      ) : null}
+      </div>
     </article>
   );
 }

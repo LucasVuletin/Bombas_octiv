@@ -6,6 +6,19 @@ export type PumpNonOperationalReason = string;
 export type ManifoldType = "clean" | "dirty";
 export type PumpSignalKey = "p" | "d" | "s";
 export type PumpSignalColumnCount = 3 | 5;
+export type WellStageMode = "single" | "dual-simul";
+
+export type WellStageEntry = {
+  well: string;
+  stage: string;
+};
+
+export type WellStageContext = {
+  mode: WellStageMode;
+  pad: string;
+  primary: WellStageEntry;
+  secondary: WellStageEntry;
+};
 
 export type PumpSignals = {
   p: number;
@@ -25,6 +38,8 @@ export type Pump = {
   position: number;
   isDgb: boolean;
   substitutionPercentage: number;
+  substitutionError: string;
+  signalColumnCount: PumpSignalColumnCount;
   signals: PumpSignals;
 };
 
@@ -73,7 +88,7 @@ export const PUMP_OPERATION_META: Record<
   "non-operative": {
     label: "No operativa",
     cardLabel: "No operativa",
-    accentClass: "text-amber-100",
+    accentClass: "text-red-400",
     dotClass: "bg-[#8B6A4A]",
     badgeClass: "border-[#8B6A4A]/35 bg-[#8B6A4A]/12 text-[#F0E2D1]",
   },
@@ -83,10 +98,11 @@ export const NON_OPERATIONAL_REASON_OPTIONS: Array<{
   value: PumpNonOperationalReason;
   label: string;
 }> = [
-  { value: "empaque", label: "empaque" },
-  { value: "cavitacion", label: "cavitacion" },
+  { value: "cavitacion", label: "Cavitación" },
+  { value: "empaque", label: "Empaque" },
+  { value: "manguerote", label: "Manguerote" },
   { value: "dpm", label: "DPM" },
-  { value: "no-encastra", label: "no encastra" },
+  { value: "no-encastra", label: "No encastra" },
 ];
 
 export function getNonOperationalReasonLabel(reason: PumpNonOperationalReason) {
@@ -143,13 +159,13 @@ export const MANIFOLD_TYPE_META: Record<
   }
 > = {
   clean: {
-    label: "Celeste",
+    label: "Limpio",
     accentClass: "border-[#7FB3C8]/35 bg-[#7FB3C8]/10 text-[#DBE8EE]",
     chipClass: "bg-[#7FB3C8]",
     slotClass: "bg-[#7FB3C8]/70",
   },
   dirty: {
-    label: "Marron",
+    label: "Sucio",
     accentClass: "border-[#8B6A4A]/40 bg-[#8B6A4A]/12 text-[#F0E2D1]",
     chipClass: "bg-[#8B6A4A]",
     slotClass: "bg-[#8B6A4A]/75",

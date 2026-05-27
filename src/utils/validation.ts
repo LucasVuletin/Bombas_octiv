@@ -6,15 +6,17 @@ import {
   PumpConnection,
   PumpNonOperationalReason,
   PumpOperationState,
+  PumpSignalColumnCount,
 } from "../models";
 
 export type PumpFormValues = {
   sap: string;
   operationState: PumpOperationState | "";
   nonOperationalReason: PumpNonOperationalReason;
-  position: string;
   isDgb: boolean;
   substitutionPercentage: string;
+  substitutionError: string;
+  signalColumnCount: PumpSignalColumnCount;
   connection: PumpConnection;
   pValue: string;
   dValue: string;
@@ -26,7 +28,6 @@ export type PumpFormErrors = Partial<
     | "sap"
     | "operationState"
     | "nonOperationalReason"
-    | "position"
     | "substitutionPercentage"
     | "pValue"
     | "dValue"
@@ -59,17 +60,6 @@ export function validatePumpForm(values: PumpFormValues) {
 
   if (values.operationState === "non-operative" && !values.nonOperationalReason.trim()) {
     errors.nonOperationalReason = "Ingresa un motivo.";
-  }
-
-  const parsedPosition = Number(values.position);
-
-  if (
-    values.position.trim() === "" ||
-    !Number.isInteger(parsedPosition) ||
-    parsedPosition < 1 ||
-    parsedPosition > MAX_PUMP_POSITION
-  ) {
-    errors.position = `La posicion debe ser un entero entre 1 y ${MAX_PUMP_POSITION}.`;
   }
 
   const parsedSubstitutionPercentage = Number(values.substitutionPercentage);
@@ -118,7 +108,6 @@ export function validatePumpForm(values: PumpFormValues) {
   return {
     errors,
     isValid: Object.keys(errors).length === 0,
-    parsedPosition,
     parsedSubstitutionPercentage: values.isDgb ? parsedSubstitutionPercentage : 0,
     parsedPValue,
     parsedDValue,
@@ -137,9 +126,10 @@ export function validateManifoldForm(values: ManifoldFormValues) {
   if (
     values.pumpsPerSide.trim() === "" ||
     !Number.isInteger(parsedPumpsPerSide) ||
-    parsedPumpsPerSide <= 0
+    parsedPumpsPerSide < 1 ||
+    parsedPumpsPerSide > MAX_PUMP_POSITION
   ) {
-    errors.pumpsPerSide = "La cantidad debe ser un entero mayor a 0.";
+    errors.pumpsPerSide = `La cantidad debe ser un entero entre 1 y ${MAX_PUMP_POSITION}.`;
   }
 
   return {

@@ -82,25 +82,50 @@ export function getBenchPumps(pumps: Pump[]) {
 export function getPumpStats(pumps: Pump[]) {
   const inSet = pumps.filter((pump) => pump.side !== "bench");
   const outOfSet = pumps.filter((pump) => pump.side === "bench");
-  const dgbPumps = pumps.filter((pump) => pump.isDgb === true);
+  const operativePumpsInSet = inSet.filter((pump) => pump.operationState === "operative");
+  const operativeDgbPumpsWithSubstitution = operativePumpsInSet.filter(
+    (pump) =>
+      pump.isDgb === true &&
+      Number.isFinite(pump.substitutionPercentage) &&
+      pump.substitutionPercentage > 0,
+  );
+  const operativeDgbPumpsWithError = operativePumpsInSet.filter(
+    (pump) =>
+      pump.isDgb === true &&
+      pump.substitutionPercentage === 0 &&
+      typeof pump.substitutionError === "string" &&
+      pump.substitutionError.trim().length > 0,
+  );
+  const countedOperativeDgbPumps = operativePumpsInSet.filter(
+    (pump) =>
+      pump.isDgb === true &&
+      ((Number.isFinite(pump.substitutionPercentage) && pump.substitutionPercentage > 0) ||
+        (pump.substitutionPercentage === 0 &&
+          typeof pump.substitutionError === "string" &&
+          pump.substitutionError.trim().length > 0)),
+  );
   const dgbSubstitutionPercentage =
-    dgbPumps.length === 0
+    operativeDgbPumpsWithSubstitution.length === 0
       ? 0
       : Math.round(
-          dgbPumps.reduce(
-            (total, pump) => total + (Number.isFinite(pump.substitutionPercentage) ? pump.substitutionPercentage : 0),
+          operativeDgbPumpsWithSubstitution.reduce(
+            (total, pump) => total + pump.substitutionPercentage,
             0,
-          ) / dgbPumps.length,
+          ) / operativeDgbPumpsWithSubstitution.length,
         );
 
   return {
     totalInSet: inSet.length,
-    operativeInSetCount: inSet.filter((pump) => pump.operationState === "operative").length,
+    operativeInSetCount: operativePumpsInSet.length,
     operativeOutOfSetCount: outOfSet.filter((pump) => pump.operationState === "operative").length,
     nonOperativeInSetCount: inSet.filter((pump) => pump.operationState === "non-operative").length,
     nonOperativeOutOfSetCount: outOfSet.filter(
       (pump) => pump.operationState === "non-operative",
     ).length,
+    dgbInSetCount: countedOperativeDgbPumps.length,
+    nonDgbInSetCount: operativePumpsInSet.filter((pump) => pump.isDgb !== true).length,
+    substitutingDgbInSetCount: operativeDgbPumpsWithSubstitution.length,
+    nonSubstitutingDgbInSetCount: operativeDgbPumpsWithError.length,
     dgbSubstitutionPercentage,
   };
 }

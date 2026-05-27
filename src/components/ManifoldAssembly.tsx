@@ -1,15 +1,15 @@
 import { useDroppable } from "@dnd-kit/core";
 import { ConnectionLineTone } from "./ConnectionLineTone";
 import { PumpUnitCard } from "./PumpUnitCard";
-import { createSlotDropId, ManifoldSlot } from "../utils/layoutState";
-import { MANIFOLD_TYPE_META, Manifold, Pump, PumpSignalColumnCount } from "../models";
+import { createSlotDropId, ManifoldSlot, SlotTarget } from "../utils/layoutState";
+import { MANIFOLD_TYPE_META, Manifold, Pump } from "../models";
 
 type PumpSlotProps = {
   manifold: Manifold;
+  onAddPumpToSlot: (target: SlotTarget) => void;
   onSelectPump: (pumpId: string) => void;
   pump: Pump | null;
   position: number;
-  signalColumnCount: PumpSignalColumnCount;
   selectedPumpId: string | null;
   side: "left" | "right";
 };
@@ -18,9 +18,9 @@ function PumpSlot({
   manifold,
   pump,
   position,
-  signalColumnCount,
   side,
   selectedPumpId,
+  onAddPumpToSlot,
   onSelectPump,
 }: PumpSlotProps) {
   const { isOver, setNodeRef } = useDroppable({
@@ -37,36 +37,39 @@ function PumpSlot({
   const slotBody = pump ? (
     <PumpUnitCard
       pump={pump}
-      signalColumnCount={signalColumnCount}
       onSelect={onSelectPump}
       isSelected={selectedPumpId === pump.id}
     />
   ) : (
-    <div
-      className={`layout-slot h-[9.25rem] border-slate-600/60 bg-slate-950/24 text-slate-400 transition ${
+    <button
+      type="button"
+      onClick={() =>
+        onAddPumpToSlot({
+          manifoldId: manifold.id,
+          position,
+          side,
+        })
+      }
+      aria-label={`Agregar bomba en slot ${position} del lado ${side === "left" ? "izquierdo" : "derecho"}`}
+      className={`layout-slot h-[10.5rem] w-full border-slate-600/60 bg-slate-950/24 text-slate-400 transition hover:border-[#7FB3C8]/45 hover:bg-[#7FB3C8]/8 hover:text-slate-100 xl:h-[11.25rem] ${
         isOver ? "border-[#7FB3C8]/55 bg-[#7FB3C8]/8 text-slate-200" : ""
       }`}
     >
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.24em]">
-          Slot {position}
-        </p>
-        <p className="mt-1 text-sm text-inherit">Disponible</p>
-      </div>
-    </div>
+      <span className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-600/70 bg-slate-950/42 text-3xl font-light leading-none text-slate-200">
+        +
+      </span>
+    </button>
   );
   const lineWrapperClass =
     side === "left"
-      ? "absolute right-[-5.7rem] top-0 h-full w-[5.2rem]"
-      : "absolute left-[-5.7rem] top-0 h-full w-[5.2rem]";
+      ? "absolute right-[-1.2rem] top-0 h-full w-[1.45rem] md:right-[-2.6rem] md:w-[2.85rem] xl:right-[-5.7rem] xl:w-[5.95rem]"
+      : "absolute left-[-1.2rem] top-0 h-full w-[1.45rem] md:left-[-2.6rem] md:w-[2.85rem] xl:left-[-5.7rem] xl:w-[5.95rem]";
 
   return (
     <div
       ref={setNodeRef}
-      className={`relative overflow-visible rounded-[1.65rem] border p-2 transition ${
-        isOver
-          ? "border-[#7FB3C8]/50 bg-[#7FB3C8]/8"
-          : "border-slate-700/55 bg-slate-950/18"
+      className={`relative overflow-visible rounded-[1.75rem] transition ${
+        isOver ? "ring-2 ring-[#7FB3C8]/50" : ""
       }`}
     >
       <div className="relative">{slotBody}</div>
@@ -83,83 +86,86 @@ function PumpSlot({
 type ManifoldAssemblyProps = {
   leftSlots: ManifoldSlot[];
   manifold: Manifold;
+  onAddPumpToSlot: (target: SlotTarget) => void;
+  onEditManifold: (manifoldId: string) => void;
   onSelectPump: (pumpId: string) => void;
   rightSlots: ManifoldSlot[];
   selectedPumpId: string | null;
-  signalColumnCount: PumpSignalColumnCount;
 };
 
 export function ManifoldAssembly({
   manifold,
   leftSlots,
   rightSlots,
+  onAddPumpToSlot,
+  onEditManifold,
   onSelectPump,
   selectedPumpId,
-  signalColumnCount,
 }: ManifoldAssemblyProps) {
   const typeMeta = MANIFOLD_TYPE_META[manifold.type];
+  const manifoldPumps = [...leftSlots, ...rightSlots].flatMap((slot) =>
+    slot.pump ? [slot.pump] : [],
+  );
+  const operativePumpCount = manifoldPumps.filter(
+    (pump) => pump.operationState === "operative",
+  ).length;
+  const nonOperativePumpCount = manifoldPumps.filter(
+    (pump) => pump.operationState === "non-operative",
+  ).length;
 
   return (
-    <article className="rounded-[2rem] border border-slate-700/60 bg-slate-950/28 p-4">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-400">
-            {manifold.label}
-          </p>
-          <h3 className="mt-1 text-2xl text-slate-50">{typeMeta.label}</h3>
+    <article className="rounded-none border-x-0 border-slate-700/60 bg-slate-950/28 p-0 sm:rounded-[2rem] sm:border-x sm:p-4">
+      <div className="mb-3 flex items-center justify-between gap-3 px-3 pt-3 sm:mb-4 sm:px-0 sm:pt-0">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+          <h3 className="text-2xl text-slate-50">{typeMeta.label}</h3>
+          <span className="rounded-full border border-emerald-400/20 bg-emerald-400/8 px-3 py-1 text-xs font-semibold text-emerald-100 sm:text-sm">
+            Operativas {operativePumpCount}
+          </span>
+          <span className="rounded-full border border-red-400/20 bg-red-400/8 px-3 py-1 text-xs font-semibold text-red-100 sm:text-sm">
+            No operativas {nonOperativePumpCount}
+          </span>
         </div>
 
-        <div className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] ${typeMeta.accentClass}`}>
-          {manifold.pumpsPerSide} slots por lado
-        </div>
+        <button
+          type="button"
+          onClick={() => onEditManifold(manifold.id)}
+          className="min-h-14 rounded-2xl border border-slate-600/70 bg-slate-950/80 px-5 text-base font-semibold text-slate-200 transition hover:border-slate-500/70 hover:text-white"
+        >
+          Editar
+        </button>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_13rem_minmax(0,1fr)]">
-        <div className="space-y-3">
+      <div className="grid grid-cols-[minmax(0,1fr)_1.5rem_minmax(0,1fr)] gap-0.5 sm:grid-cols-[minmax(0,1fr)_3.8rem_minmax(0,1fr)] sm:gap-3 xl:grid-cols-[minmax(0,1fr)_13rem_minmax(0,1fr)] xl:gap-4">
+        <div className="space-y-1.5 sm:space-y-3">
           {leftSlots.map((slot) => (
             <PumpSlot
               key={`${manifold.id}-left-${slot.position}`}
               manifold={manifold}
               pump={slot.pump}
               position={slot.position}
-              signalColumnCount={signalColumnCount}
               side="left"
               selectedPumpId={selectedPumpId}
+              onAddPumpToSlot={onAddPumpToSlot}
               onSelectPump={onSelectPump}
             />
           ))}
         </div>
 
         <div className="relative flex min-h-full items-stretch justify-center">
-          <div className="absolute inset-y-2 left-1/2 w-[52px] -translate-x-1/2 rounded-full border border-slate-700/65 bg-[linear-gradient(180deg,rgba(15,23,42,0.98)_0%,rgba(12,19,31,0.98)_100%)]" />
+          <div className="absolute inset-y-2 left-1/2 w-4 -translate-x-1/2 rounded-full border border-slate-700/65 bg-[linear-gradient(180deg,rgba(15,23,42,0.98)_0%,rgba(12,19,31,0.98)_100%)] sm:w-8 xl:w-[52px]" />
           <div className="absolute inset-y-7 left-1/2 w-px -translate-x-1/2 bg-slate-700/70" />
-
-          <div className="relative z-10 flex min-h-full flex-col items-center justify-between py-6">
-            <span className={`h-4 w-4 rounded-full ${typeMeta.chipClass}`} />
-            <div className="rounded-[1.35rem] border border-slate-700/60 bg-slate-950/55 px-3 py-4">
-              <p className="vertical-label text-xs font-semibold uppercase tracking-[0.28em] text-slate-300">
-                MANIFOLD
-              </p>
-            </div>
-            <div className="text-center">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                Espacios
-              </p>
-              <p className="mt-1 text-lg font-semibold text-slate-50">{manifold.pumpsPerSide}</p>
-            </div>
-          </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-1.5 sm:space-y-3">
           {rightSlots.map((slot) => (
             <PumpSlot
               key={`${manifold.id}-right-${slot.position}`}
               manifold={manifold}
               pump={slot.pump}
               position={slot.position}
-              signalColumnCount={signalColumnCount}
               side="right"
               selectedPumpId={selectedPumpId}
+              onAddPumpToSlot={onAddPumpToSlot}
               onSelectPump={onSelectPump}
             />
           ))}

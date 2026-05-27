@@ -1,17 +1,15 @@
 import { useDroppable } from "@dnd-kit/core";
-import { Pump, PumpSignalColumnCount } from "../models";
+import { Pump } from "../models";
 import { PumpUnitCard } from "./PumpUnitCard";
 
 type PumpReserveProps = {
   pumps: Pump[];
-  signalColumnCount: PumpSignalColumnCount;
   selectedPumpId: string | null;
   onSelectPump: (pumpId: string) => void;
 };
 
 export function PumpReserve({
   pumps,
-  signalColumnCount,
   selectedPumpId,
   onSelectPump,
 }: PumpReserveProps) {
@@ -54,7 +52,6 @@ export function PumpReserve({
             <PumpUnitCard
               key={pump.id}
               pump={pump}
-              signalColumnCount={signalColumnCount}
               onSelect={onSelectPump}
               isSelected={selectedPumpId === pump.id}
             />

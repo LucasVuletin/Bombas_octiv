@@ -4,6 +4,8 @@ import {
   MIN_SIGNAL_VALUE,
   NON_OPERATIONAL_REASON_OPTIONS,
   PUMP_OPERATION_OPTIONS,
+  PUMP_SIGNAL_COLUMN_OPTIONS,
+  PumpSignalColumnCount,
 } from "../models";
 import { PumpFormErrors, PumpFormValues } from "../utils/validation";
 
@@ -87,9 +89,7 @@ export function PumpFormFields({
           />
           <datalist id="non-operational-reason-options">
             {NON_OPERATIONAL_REASON_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
+              <option key={option.value} value={option.label} />
             ))}
           </datalist>
           <FieldError message={errors.nonOperationalReason} />
@@ -98,23 +98,9 @@ export function PumpFormFields({
 
       <div className="rounded-[1.6rem] border border-slate-700/70 bg-slate-950/45 p-5">
         <p className="mb-4 text-sm font-semibold uppercase tracking-[0.22em] text-slate-300">
-          Posicion y DGB
+          Datos DGB
         </p>
-        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_9rem_minmax(0,1fr)]">
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold uppercase tracking-[0.22em] text-slate-300">
-              Posicion
-            </span>
-            <input
-              inputMode="numeric"
-              value={values.position}
-              onChange={(event) => onChange("position", event.target.value)}
-              className="w-full rounded-2xl border border-slate-700/70 bg-slate-900/85 px-5 py-4 text-2xl tracking-[0.08em] text-slate-50 outline-none transition focus:border-[#7FB3C8]/60 focus:ring-2 focus:ring-[#7FB3C8]/20"
-              placeholder="1 a 40"
-            />
-            <FieldError message={errors.position} />
-          </label>
-
+        <div className="grid gap-4 md:grid-cols-[9rem_minmax(0,1fr)]">
           <label className="block">
             <span className="mb-2 block text-sm font-semibold uppercase tracking-[0.22em] text-slate-300">
               DGB
@@ -154,6 +140,20 @@ export function PumpFormFields({
             <FieldError message={errors.substitutionPercentage} />
           </label>
         </div>
+
+        {values.isDgb ? (
+          <label className="mt-4 block">
+            <span className="mb-2 block text-sm font-semibold uppercase tracking-[0.22em] text-slate-300">
+              Error: por que no esta sustituyendo
+            </span>
+            <input
+              value={values.substitutionError}
+              onChange={(event) => onChange("substitutionError", event.target.value)}
+              className="w-full rounded-2xl border border-slate-700/70 bg-slate-900/85 px-5 py-4 text-lg text-slate-50 outline-none transition focus:border-[#7FB3C8]/60 focus:ring-2 focus:ring-[#7FB3C8]/20"
+              placeholder="Escribe el motivo si la sustitucion no aplica"
+            />
+          </label>
+        ) : null}
       </div>
 
       {showConnection ? (
@@ -179,14 +179,35 @@ export function PumpFormFields({
 
       {showSignals ? (
         <div className="rounded-[1.6rem] border border-slate-700/70 bg-slate-950/45 p-5">
-          <div className="mb-4">
+          <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-300">
               Datos P / D / S
             </p>
-            <p className="mt-1 text-sm text-slate-400">
-              Cada valor se replica visualmente en toda la fila de la bomba.
-            </p>
+            <label className="block">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                Columnas P/D/S
+              </span>
+              <select
+                value={values.signalColumnCount}
+                onChange={(event) =>
+                  onChange(
+                    "signalColumnCount",
+                    Number(event.target.value) as PumpSignalColumnCount,
+                  )
+                }
+                className="min-h-12 rounded-xl border border-slate-700/70 bg-slate-900/85 px-4 text-base font-semibold text-slate-50 outline-none transition focus:border-[#7FB3C8]/60 focus:ring-2 focus:ring-[#7FB3C8]/20"
+              >
+                {PUMP_SIGNAL_COLUMN_OPTIONS.map((columnCount) => (
+                  <option key={columnCount} value={columnCount}>
+                    {columnCount} columnas
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
+          <p className="mb-4 text-sm text-slate-400">
+            Cada valor se replica visualmente en toda la fila de esta bomba.
+          </p>
 
           <div className="grid gap-4 md:grid-cols-3">
             <label className="block">
