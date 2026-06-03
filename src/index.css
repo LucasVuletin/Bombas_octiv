@@ -79,7 +79,7 @@
   .pump-shell {
     position: relative;
     isolation: isolate;
-    overflow: hidden;
+    overflow: visible;
     border-radius: 1.45rem;
     border: 1px solid rgba(148, 163, 184, 0.28);
     background: rgba(11, 23, 39, 0.98);

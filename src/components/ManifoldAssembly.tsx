@@ -1,17 +1,25 @@
 import { useDroppable } from "@dnd-kit/core";
 import { ConnectionLineTone } from "./ConnectionLineTone";
 import { PumpUnitCard } from "./PumpUnitCard";
-import { createSlotDropId, ManifoldSlot, SlotTarget } from "../utils/layoutState";
+import {
+  createSlotActuatorKey,
+  createSlotDropId,
+  ManifoldSlot,
+  SlotActuatorMap,
+  SlotTarget,
+} from "../utils/layoutState";
 import { MANIFOLD_TYPE_META, Manifold, Pump } from "../models";
 
 type PumpSlotProps = {
   manifold: Manifold;
   onAddPumpToSlot: (target: SlotTarget) => void;
   onSelectPump: (pumpId: string) => void;
+  onSlotActuatorChange: (target: SlotTarget, value: string) => void;
   pump: Pump | null;
   position: number;
   selectedPumpId: string | null;
   side: "left" | "right";
+  slotActuators: SlotActuatorMap;
 };
 
 function PumpSlot({
@@ -20,19 +28,26 @@ function PumpSlot({
   position,
   side,
   selectedPumpId,
+  slotActuators,
   onAddPumpToSlot,
   onSelectPump,
+  onSlotActuatorChange,
 }: PumpSlotProps) {
+  const slotTarget = {
+    manifoldId: manifold.id,
+    position,
+    side,
+  };
   const { isOver, setNodeRef } = useDroppable({
-    id: createSlotDropId({
-      manifoldId: manifold.id,
-      position,
-      side,
-    }),
+    id: createSlotDropId(slotTarget),
   });
 
-  const connection =
-    !pump || pump.connection === "none" ? "none" : manifold.type;
+  const slotActuatorValue = slotActuators[createSlotActuatorKey(slotTarget)] ?? "";
+  const connection = pump
+    ? pump.connection === "none"
+      ? "none"
+      : manifold.type
+    : manifold.type;
 
   const slotBody = pump ? (
     <PumpUnitCard
@@ -44,11 +59,7 @@ function PumpSlot({
     <button
       type="button"
       onClick={() =>
-        onAddPumpToSlot({
-          manifoldId: manifold.id,
-          position,
-          side,
-        })
+        onAddPumpToSlot(slotTarget)
       }
       aria-label={`Agregar bomba en slot ${position} del lado ${side === "left" ? "izquierdo" : "derecho"}`}
       className={`layout-slot h-[10.5rem] w-full border-slate-600/60 bg-slate-950/24 text-slate-400 transition hover:border-[#7FB3C8]/45 hover:bg-[#7FB3C8]/8 hover:text-slate-100 xl:h-[11.25rem] ${
@@ -64,6 +75,10 @@ function PumpSlot({
     side === "left"
       ? "absolute right-[-1.2rem] top-0 h-full w-[1.45rem] md:right-[-2.6rem] md:w-[2.85rem] xl:right-[-5.7rem] xl:w-[5.95rem]"
       : "absolute left-[-1.2rem] top-0 h-full w-[1.45rem] md:left-[-2.6rem] md:w-[2.85rem] xl:left-[-5.7rem] xl:w-[5.95rem]";
+  const actuatorInputPositionClass =
+    side === "left"
+      ? "left-0.5 translate-x-0 xl:left-1/2 xl:-translate-x-1/2"
+      : "right-0.5 translate-x-0 xl:right-auto xl:left-1/2 xl:-translate-x-1/2";
 
   return (
     <div
@@ -74,11 +89,25 @@ function PumpSlot({
     >
       <div className="relative">{slotBody}</div>
 
-      {pump ? (
-        <div className={lineWrapperClass}>
-          <ConnectionLineTone connection={connection} side={side} />
-        </div>
-      ) : null}
+      <div className={`${lineWrapperClass} pointer-events-none`}>
+        <ConnectionLineTone connection={connection} side={side} />
+        <input
+          aria-label={`Actuadores asignados en slot ${position} del lado ${
+            side === "left" ? "izquierdo" : "derecho"
+          }`}
+          autoComplete="off"
+          inputMode="numeric"
+          maxLength={3}
+          onChange={(event) => onSlotActuatorChange(slotTarget, event.target.value)}
+          onClick={(event) => event.stopPropagation()}
+          onFocus={(event) => event.currentTarget.select()}
+          onPointerDown={(event) => event.stopPropagation()}
+          placeholder="0"
+          title="Actuadores asignados"
+          value={slotActuatorValue}
+          className={`pointer-events-auto absolute top-1/2 z-20 h-7 w-8 -translate-y-1/2 rounded-lg border border-slate-600/70 bg-slate-950/90 px-1 text-center text-[0.65rem] font-black leading-none text-slate-50 shadow-[0_10px_24px_rgba(2,6,23,0.55)] outline-none transition placeholder:text-slate-500 focus:border-[#7FB3C8]/70 focus:ring-2 focus:ring-[#7FB3C8]/25 sm:h-8 sm:w-10 sm:text-xs xl:w-12 ${actuatorInputPositionClass}`}
+        />
+      </div>
     </div>
   );
 }
@@ -89,8 +118,10 @@ type ManifoldAssemblyProps = {
   onAddPumpToSlot: (target: SlotTarget) => void;
   onEditManifold: (manifoldId: string) => void;
   onSelectPump: (pumpId: string) => void;
+  onSlotActuatorChange: (target: SlotTarget, value: string) => void;
   rightSlots: ManifoldSlot[];
   selectedPumpId: string | null;
+  slotActuators: SlotActuatorMap;
 };
 
 export function ManifoldAssembly({
@@ -100,7 +131,9 @@ export function ManifoldAssembly({
   onAddPumpToSlot,
   onEditManifold,
   onSelectPump,
+  onSlotActuatorChange,
   selectedPumpId,
+  slotActuators,
 }: ManifoldAssemblyProps) {
   const typeMeta = MANIFOLD_TYPE_META[manifold.type];
   const manifoldPumps = [...leftSlots, ...rightSlots].flatMap((slot) =>
@@ -145,8 +178,10 @@ export function ManifoldAssembly({
               position={slot.position}
               side="left"
               selectedPumpId={selectedPumpId}
+              slotActuators={slotActuators}
               onAddPumpToSlot={onAddPumpToSlot}
               onSelectPump={onSelectPump}
+              onSlotActuatorChange={onSlotActuatorChange}
             />
           ))}
         </div>
@@ -165,8 +200,10 @@ export function ManifoldAssembly({
               position={slot.position}
               side="right"
               selectedPumpId={selectedPumpId}
+              slotActuators={slotActuators}
               onAddPumpToSlot={onAddPumpToSlot}
               onSelectPump={onSelectPump}
+              onSlotActuatorChange={onSlotActuatorChange}
             />
           ))}
         </div>

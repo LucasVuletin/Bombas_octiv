@@ -3,6 +3,7 @@ export type PumpSide = "left" | "right" | "bench";
 export type PumpConnection = "clean" | "dirty" | "none";
 export type PumpOperationState = "operative" | "non-operative";
 export type PumpNonOperationalReason = string;
+export type PumpSetMovement = "entering" | "leaving";
 export type ManifoldType = "clean" | "dirty";
 export type PumpSignalKey = "p" | "d" | "s";
 export type PumpSignalColumnCount = 3 | 5;
@@ -35,6 +36,7 @@ export type Pump = {
   connection: PumpConnection;
   operationState: PumpOperationState;
   nonOperationalReason: PumpNonOperationalReason | null;
+  setMovement: PumpSetMovement;
   position: number;
   isDgb: boolean;
   substitutionPercentage: number;
@@ -91,6 +93,26 @@ export const PUMP_OPERATION_META: Record<
     accentClass: "text-red-400",
     dotClass: "bg-[#8B6A4A]",
     badgeClass: "border-[#8B6A4A]/35 bg-[#8B6A4A]/12 text-[#F0E2D1]",
+  },
+};
+
+export const PUMP_SET_MOVEMENT_META: Record<
+  PumpSetMovement,
+  {
+    label: string;
+    tabClass: string;
+    selectClass: string;
+  }
+> = {
+  entering: {
+    label: "Entra",
+    tabClass: "border-emerald-300/40 bg-emerald-500/85 text-emerald-950 shadow-[0_0_18px_rgba(52,211,153,0.34)]",
+    selectClass: "text-emerald-100",
+  },
+  leaving: {
+    label: "Sale",
+    tabClass: "border-red-300/40 bg-red-500/85 text-red-950 shadow-[0_0_18px_rgba(248,113,113,0.34)]",
+    selectClass: "text-red-100",
   },
 };
 
@@ -177,6 +199,13 @@ export const PUMP_OPERATION_OPTIONS = (
 ).map((operationState) => ({
   value: operationState,
   label: PUMP_OPERATION_META[operationState].label,
+}));
+
+export const PUMP_SET_MOVEMENT_OPTIONS = (
+  Object.keys(PUMP_SET_MOVEMENT_META) as PumpSetMovement[]
+).map((setMovement) => ({
+  value: setMovement,
+  label: PUMP_SET_MOVEMENT_META[setMovement].label,
 }));
 
 export const CONNECTION_OPTIONS = (

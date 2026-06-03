@@ -223,6 +223,7 @@ export function createDefaultPumps(): Pump[] {
       connection: pump.connection,
       operationState: pump.operationState,
       nonOperationalReason: pump.nonOperationalReason,
+      setMovement: pump.side === "bench" ? "leaving" : "entering",
       position: pump.position,
       isDgb: false,
       substitutionPercentage: 0,

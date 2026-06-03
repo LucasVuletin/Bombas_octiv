@@ -4,7 +4,9 @@ import {
   MIN_SIGNAL_VALUE,
   NON_OPERATIONAL_REASON_OPTIONS,
   PUMP_OPERATION_OPTIONS,
+  PUMP_SET_MOVEMENT_OPTIONS,
   PUMP_SIGNAL_COLUMN_OPTIONS,
+  PumpSetMovement,
   PumpSignalColumnCount,
 } from "../models";
 import { PumpFormErrors, PumpFormValues } from "../utils/validation";
@@ -95,6 +97,29 @@ export function PumpFormFields({
           <FieldError message={errors.nonOperationalReason} />
         </label>
       ) : null}
+
+      <label className="block">
+        <span className="mb-2 block text-sm font-semibold uppercase tracking-[0.22em] text-slate-300">
+          Entrada / salida del set
+        </span>
+        <select
+          value={values.setMovement}
+          onChange={(event) =>
+            onChange("setMovement", event.target.value as PumpSetMovement)
+          }
+          className="w-full rounded-2xl border border-slate-700/70 bg-slate-900/85 px-5 py-4 text-lg text-slate-50 outline-none transition focus:border-[#7FB3C8]/60 focus:ring-2 focus:ring-[#7FB3C8]/20"
+        >
+          {PUMP_SET_MOVEMENT_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <p className="mt-2 text-sm text-slate-400">
+          Se muestra como una solapa vertical afuera de la bomba.
+        </p>
+        <FieldError message={errors.setMovement} />
+      </label>
 
       <div className="rounded-[1.6rem] border border-slate-700/70 bg-slate-950/45 p-5">
         <p className="mb-4 text-sm font-semibold uppercase tracking-[0.22em] text-slate-300">

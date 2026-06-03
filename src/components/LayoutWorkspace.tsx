@@ -1,5 +1,5 @@
 import { Manifold, Pump } from "../models";
-import { buildManifoldSlots, SlotTarget } from "../utils/layoutState";
+import { buildManifoldSlots, SlotActuatorMap, SlotTarget } from "../utils/layoutState";
 import { ManifoldAssembly } from "./ManifoldAssembly";
 
 type LayoutWorkspaceProps = {
@@ -7,9 +7,11 @@ type LayoutWorkspaceProps = {
   notice?: string | null;
   pumps: Pump[];
   selectedPumpId: string | null;
+  slotActuators: SlotActuatorMap;
   onAddPumpToSlot: (target: SlotTarget) => void;
   onEditManifold: (manifoldId: string) => void;
   onSelectPump: (pumpId: string) => void;
+  onSlotActuatorChange: (target: SlotTarget, value: string) => void;
 };
 
 export function LayoutWorkspace({
@@ -17,9 +19,11 @@ export function LayoutWorkspace({
   pumps,
   notice = null,
   selectedPumpId,
+  slotActuators,
   onAddPumpToSlot,
   onEditManifold,
   onSelectPump,
+  onSlotActuatorChange,
 }: LayoutWorkspaceProps) {
   return (
     <section className="hmi-panel -mx-4 overflow-hidden rounded-none border-x-0 p-0 sm:mx-0 sm:rounded-[2rem] sm:border-x sm:p-4 md:p-6">
@@ -37,9 +41,11 @@ export function LayoutWorkspace({
             leftSlots={buildManifoldSlots(manifolds, pumps, manifold.id, "left")}
             rightSlots={buildManifoldSlots(manifolds, pumps, manifold.id, "right")}
             selectedPumpId={selectedPumpId}
+            slotActuators={slotActuators}
             onAddPumpToSlot={onAddPumpToSlot}
             onEditManifold={onEditManifold}
             onSelectPump={onSelectPump}
+            onSlotActuatorChange={onSlotActuatorChange}
           />
         ))}
       </div>

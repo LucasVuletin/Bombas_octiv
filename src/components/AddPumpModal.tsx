@@ -17,6 +17,7 @@ type AddPumpModalProps = {
     sap: string;
     operationState: Pump["operationState"];
     nonOperationalReason: Pump["nonOperationalReason"];
+    setMovement: Pump["setMovement"];
     isDgb: boolean;
     substitutionPercentage: number;
     substitutionError: string;
@@ -36,6 +37,7 @@ function createInitialValues(): PumpFormValues {
     sap: "",
     operationState: "",
     nonOperationalReason: "",
+    setMovement: "entering",
     isDgb: false,
     substitutionPercentage: "0",
     substitutionError: "",
@@ -156,6 +158,7 @@ export function AddPumpModal({
         values.operationState === "non-operative"
           ? values.nonOperationalReason.trim()
           : null,
+      setMovement: values.setMovement,
       isDgb: values.isDgb,
       substitutionPercentage: validation.parsedSubstitutionPercentage,
       substitutionError: values.isDgb ? values.substitutionError.trim() : "",

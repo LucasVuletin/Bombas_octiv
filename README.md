@@ -19,7 +19,9 @@ La atribucion identifica al creador y desarrollador de esta version de la aplica
 - Alta manual de bombas con validacion de `SAP`, estado, motivo libre y datos `DGB`.
 - Alta manual y edicion en layout de manifolds con nombre `Limpio/Sucio` y cantidad de slots por lado.
 - Edicion manual de cada bomba mediante modal grande, incluida la opcion de borrarla.
+- Solapa visual por bomba para marcar si entra o sale del set.
 - Tarjetas de bomba simplificadas: estado, motivo si corresponde, `SAP`, `DGB`, porcentaje de sustitucion y comentario `Error:` si aplica.
+- Input numerico de actuadores asignados en cada slot, visible sobre la linea hacia el manifold aun si no hay bomba.
 - Lineas visuales sobrias hacia el manifold: celeste, marron o sin linea.
 - Contadores operativos en/fuera del set, resumen de bombas con/sin DGB y promedio de sustitucion de bombas DGB activas con porcentaje mayor a cero.
 - Cada bomba permite elegir en su editor si muestra `P/D/S` en 3 o 5 columnas.
@@ -175,6 +177,9 @@ src/
 - Si una bomba esta `No operativa`, el modal exige escribir o seleccionar un motivo.
 - Las bombas `DGB` permiten cargar un porcentaje de sustitucion de 0 a 100.
 - Si una bomba `DGB` no sustituye, su editor permite registrar un comentario visible bajo `Error:`.
+- Cada bomba permite marcar si `Entra` o `Sale` del set mediante una solapa vertical externa verde o roja.
+- Cada slot permite cargar manualmente actuadores asignados, incluso cuando el slot esta vacio.
+- La exportacion Excel incluye el movimiento de cada bomba y una hoja de `Slots y actuadores`.
 - El contador `Bombas sin sustituir` considera bombas `DGB` operativas del set con `0%` y comentario `Error:` cargado.
 - La ubicacion de una bomba se determina arrastrandola a un slot; no se edita manualmente como campo.
 - Desde `Editar` en cada manifold se puede cambiar `Limpio/Sucio` y la cantidad de slots, siempre que no se oculten bombas ubicadas.

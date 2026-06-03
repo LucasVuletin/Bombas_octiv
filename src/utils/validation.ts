@@ -6,6 +6,7 @@ import {
   PumpConnection,
   PumpNonOperationalReason,
   PumpOperationState,
+  PumpSetMovement,
   PumpSignalColumnCount,
 } from "../models";
 
@@ -13,6 +14,7 @@ export type PumpFormValues = {
   sap: string;
   operationState: PumpOperationState | "";
   nonOperationalReason: PumpNonOperationalReason;
+  setMovement: PumpSetMovement;
   isDgb: boolean;
   substitutionPercentage: string;
   substitutionError: string;
@@ -28,6 +30,7 @@ export type PumpFormErrors = Partial<
     | "sap"
     | "operationState"
     | "nonOperationalReason"
+    | "setMovement"
     | "substitutionPercentage"
     | "pValue"
     | "dValue"
@@ -60,6 +63,10 @@ export function validatePumpForm(values: PumpFormValues) {
 
   if (values.operationState === "non-operative" && !values.nonOperationalReason.trim()) {
     errors.nonOperationalReason = "Ingresa un motivo.";
+  }
+
+  if (values.setMovement !== "entering" && values.setMovement !== "leaving") {
+    errors.setMovement = "Selecciona si la bomba entra o sale del set.";
   }
 
   const parsedSubstitutionPercentage = Number(values.substitutionPercentage);

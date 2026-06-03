@@ -3,6 +3,7 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   getNonOperationalReasonLabel,
   PUMP_OPERATION_META,
+  PUMP_SET_MOVEMENT_META,
   Pump,
 } from "../models";
 import { PumpSignalGrid } from "./PumpSignalGrid";
@@ -45,6 +46,18 @@ export function PumpUnitCard({
   isOverlay = false,
 }: PumpUnitCardProps) {
   const operationMeta = PUMP_OPERATION_META[pump.operationState];
+  const setMovementMeta =
+    PUMP_SET_MOVEMENT_META[pump.setMovement === "leaving" ? "leaving" : "entering"];
+  const setMovementTabPosition =
+    pump.side === "left"
+      ? "left-0 rounded-l-xl rounded-r-md sm:left-[-1.15rem] sm:rounded-l-2xl"
+      : "right-0 rounded-l-md rounded-r-xl sm:right-[-1.15rem] sm:rounded-r-2xl";
+  const contentPaddingClass =
+    pump.side === "left"
+      ? "py-2 pl-8 pr-2 sm:p-3.5 xl:p-4"
+      : pump.side === "right"
+        ? "py-2 pl-2 pr-8 sm:p-3.5 xl:p-4"
+        : "p-2 sm:p-3.5 xl:p-4";
   const reasonLabel = pump.nonOperationalReason
     ? getNonOperationalReasonLabel(pump.nonOperationalReason)
     : null;
@@ -93,7 +106,14 @@ export function PumpUnitCard({
         draggable && isDragging ? "opacity-30" : "",
       ].join(" ")}
     >
-      <div className="relative z-10 flex min-w-0 flex-1 p-2 text-left sm:p-3.5 xl:p-4">
+      <div
+        aria-label={`Movimiento set: ${setMovementMeta.label}`}
+        className={`pointer-events-none absolute bottom-5 top-5 z-30 flex w-6 items-center justify-center border px-0.5 text-[0.55rem] font-black uppercase leading-none tracking-[0.16em] sm:w-7 sm:text-[0.62rem] ${setMovementTabPosition} ${setMovementMeta.tabClass}`}
+      >
+        <span className="vertical-label rotate-180">{setMovementMeta.label}</span>
+      </div>
+
+      <div className={`relative z-10 flex min-w-0 flex-1 text-left ${contentPaddingClass}`}>
         <div className="flex h-full min-w-0 w-full flex-col">
           <div className="shrink-0 border-b border-white/8 pb-2">
             <div className="grid h-[4rem] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-x-0.5 overflow-hidden font-semibold leading-tight sm:h-[3.5rem] sm:gap-x-2 xl:h-[3.25rem]">

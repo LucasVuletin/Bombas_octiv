@@ -21,6 +21,7 @@ function getInitialValues(pump: Pump | null): PumpFormValues {
       sap: "",
       operationState: "",
       nonOperationalReason: "",
+      setMovement: "entering",
       isDgb: false,
       substitutionPercentage: "0",
       substitutionError: "",
@@ -36,6 +37,7 @@ function getInitialValues(pump: Pump | null): PumpFormValues {
     sap: pump.sap,
     operationState: pump.operationState,
     nonOperationalReason: pump.nonOperationalReason ?? "",
+    setMovement: pump.setMovement === "leaving" ? "leaving" : "entering",
     isDgb: pump.isDgb === true,
     substitutionPercentage: String(pump.substitutionPercentage ?? 0),
     substitutionError: pump.substitutionError ?? "",
@@ -162,6 +164,7 @@ export function PumpEditModal({ pump, onClose, onDelete, onSave }: PumpEditModal
         values.operationState === "non-operative"
           ? values.nonOperationalReason.trim()
           : null,
+      setMovement: values.setMovement,
       isDgb: values.isDgb,
       substitutionPercentage: validation.parsedSubstitutionPercentage,
       substitutionError: values.isDgb ? values.substitutionError.trim() : "",

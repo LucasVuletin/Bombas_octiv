@@ -4,16 +4,18 @@ import {
   getNonOperationalReasonLabel,
   Manifold,
   Pump,
+  PUMP_SET_MOVEMENT_META,
   SetNumber,
   SIDE_LABELS,
   WellStageContext,
 } from "../models";
-import { getPumpStats } from "./layoutState";
+import { createSlotActuatorKey, getPumpStats, SlotActuatorMap } from "./layoutState";
 
 type ExportLayoutWorkbookInput = {
   manifolds: Manifold[];
   pumps: Pump[];
   selectedSet: SetNumber;
+  slotActuators: SlotActuatorMap;
   stageContext: WellStageContext;
 };
 
@@ -23,7 +25,9 @@ const RECOMMENDED_FIELDS: RecommendationRow[] = [
   ["Identificacion", "Fecha y hora de captura", "Agregar por snapshot/evento", "Permite construir series temporales y anticipar fallas."],
   ["Identificacion", "Pad, pozo y etapa", "Disponible ahora", "Segmenta resultados por trabajo y permite comparar etapas."],
   ["Configuracion", "Set, SAP, manifold, lado y slot", "Disponible ahora", "Reconstruye la configuracion fisica de cada bomba."],
+  ["Configuracion", "Actuadores asignados por slot", "Disponible ahora", "Registra capacidad asignada incluso cuando no hay bomba en el slot."],
   ["Estado", "Operativa, motivo no operativa y error DGB", "Disponible ahora", "Define eventos de indisponibilidad y causas."],
+  ["Estado", "Movimiento de bomba Entra/Sale", "Disponible ahora", "Diferencia equipos que ingresan o salen del set durante cambios operativos."],
   ["DGB", "Tiene DGB y porcentaje de sustitucion", "Disponible ahora", "Mide el resultado principal de sustitucion."],
   ["Senales bomba", "P, D y S", "Disponible ahora", "Variables de condicion de la bomba en el snapshot."],
   ["Tratamiento", "Caudal total y caudal asignado a cada pozo", "Agregar", "Explica demanda real y distribucion en Dual/Simul."],
@@ -89,6 +93,21 @@ function toContextValue(value: string) {
   return value.trim() || "Sin cargar";
 }
 
+function getSetMovementLabel(pump: Pump) {
+  return PUMP_SET_MOVEMENT_META[pump.setMovement === "leaving" ? "leaving" : "entering"].label;
+}
+
+function getSlotActuatorValue(
+  slotActuators: SlotActuatorMap,
+  target: {
+    manifoldId: string;
+    position: number;
+    side: "left" | "right";
+  },
+) {
+  return slotActuators[createSlotActuatorKey(target)] ?? "";
+}
+
 function createLocalTimestamp(value: Date) {
   const pad = (entry: number) => String(entry).padStart(2, "0");
 
@@ -105,6 +124,7 @@ export async function exportLayoutWorkbook({
   manifolds,
   pumps,
   selectedSet,
+  slotActuators,
   stageContext,
 }: ExportLayoutWorkbookInput) {
   const exportDate = new Date();
@@ -152,10 +172,12 @@ export async function exportLayoutWorkbook({
     "Etapa 2",
     "SAP",
     "En set",
+    "Movimiento set",
     "Manifold",
     "Tipo manifold",
     "Lado",
     "Slot",
+    "Actuadores asignados",
     "Estado",
     "Motivo no operativa",
     "DGB",
@@ -173,6 +195,15 @@ export async function exportLayoutWorkbook({
   pumps.forEach((pump) => {
     const manifold = pump.manifoldId ? manifoldById.get(pump.manifoldId) : undefined;
     const inSet = pump.side !== "bench";
+    let actuatorValue = "";
+
+    if (pump.side !== "bench" && pump.manifoldId) {
+      actuatorValue = getSlotActuatorValue(slotActuators, {
+        manifoldId: pump.manifoldId,
+        position: pump.position,
+        side: pump.side,
+      });
+    }
 
     pumpData.push([
       dateCell(exportDate),
@@ -185,10 +216,12 @@ export async function exportLayoutWorkbook({
       secondaryEnabled ? stageContext.secondary.stage.trim() : "",
       pump.sap,
       toYesNo(inSet),
+      getSetMovementLabel(pump),
       manifold?.label ?? "",
       manifold?.type === "clean" ? "Limpio" : manifold?.type === "dirty" ? "Sucio" : "",
       SIDE_LABELS[pump.side],
       inSet ? pump.position : "",
+      actuatorValue,
       pump.operationState === "operative" ? "Operativa" : "No operativa",
       pump.nonOperationalReason ? getNonOperationalReasonLabel(pump.nonOperationalReason) : "",
       toYesNo(pump.isDgb === true),
@@ -226,6 +259,50 @@ export async function exportLayoutWorkbook({
     ]);
   });
 
+  const slotData: SheetData = [
+    [
+      "Manifold",
+      "Tipo manifold",
+      "Lado",
+      "Slot",
+      "SAP bomba",
+      "Estado bomba",
+      "Actuadores asignados",
+    ].map(headerCell),
+  ];
+  const slotSides = ["left", "right"] as const;
+
+  manifolds.forEach((manifold) => {
+    slotSides.forEach((side) => {
+      for (let position = 1; position <= manifold.pumpsPerSide; position += 1) {
+        const slotPump = pumps.find(
+          (pump) =>
+            pump.side === side &&
+            pump.manifoldId === manifold.id &&
+            pump.position === position,
+        );
+
+        slotData.push([
+          manifold.label,
+          manifold.type === "clean" ? "Limpio" : "Sucio",
+          SIDE_LABELS[side],
+          position,
+          slotPump?.sap ?? "",
+          slotPump
+            ? slotPump.operationState === "operative"
+              ? "Operativa"
+              : "No operativa"
+            : "",
+          getSlotActuatorValue(slotActuators, {
+            manifoldId: manifold.id,
+            position,
+            side,
+          }),
+        ]);
+      }
+    });
+  });
+
   const dictionaryData: SheetData = [
     ["Grupo", "Campo recomendado", "Estado", "Uso para trazabilidad y prediccion"].map(headerCell),
     ...RECOMMENDED_FIELDS,
@@ -248,9 +325,9 @@ export async function exportLayoutWorkbook({
         columns: [
           { width: 21 }, { width: 20 }, { width: 8 }, { width: 14 }, { width: 20 }, { width: 12 },
           { width: 20 }, { width: 12 }, { width: 10 }, { width: 10 }, { width: 16 }, { width: 16 },
-          { width: 16 }, { width: 8 }, { width: 16 }, { width: 25 }, { width: 10 }, { width: 17 },
-          { width: 15 }, { width: 34 }, { width: 9 }, { width: 9 }, { width: 9 }, { width: 17 },
-          { width: 14 },
+          { width: 16 }, { width: 16 }, { width: 8 }, { width: 19 }, { width: 16 }, { width: 25 },
+          { width: 10 }, { width: 17 }, { width: 15 }, { width: 34 }, { width: 9 }, { width: 9 },
+          { width: 9 }, { width: 17 }, { width: 14 },
         ],
         stickyRowsCount: 1,
         showGridLines: false,
@@ -259,6 +336,21 @@ export async function exportLayoutWorkbook({
         data: manifoldData,
         sheet: "Manifolds",
         columns: [{ width: 18 }, { width: 14 }, { width: 18 }, { width: 20 }, { width: 14 }, { width: 18 }],
+        stickyRowsCount: 1,
+        showGridLines: false,
+      },
+      {
+        data: slotData,
+        sheet: "Slots y actuadores",
+        columns: [
+          { width: 18 },
+          { width: 16 },
+          { width: 16 },
+          { width: 8 },
+          { width: 12 },
+          { width: 16 },
+          { width: 22 },
+        ],
         stickyRowsCount: 1,
         showGridLines: false,
       },

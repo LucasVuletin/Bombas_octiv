@@ -25,11 +25,14 @@ import { useLocalStorage } from "./hooks/useLocalStorage";
 import { Manifold, Pump, SetNumber, WellStageContext } from "./models";
 import {
   applyPumpEdits,
+  createSlotActuatorKey,
   getBenchPumps,
   getPumpStats,
   movePumpToBench,
+  normalizeSlotActuatorValue,
   parseSlotDropId,
   placePumpInSlot,
+  SlotActuatorMap,
   SlotTarget,
 } from "./utils/layoutState";
 
@@ -37,6 +40,7 @@ const PUMPS_STORAGE_KEY = "halliburton-frac-layout-pumps-v2";
 const MANIFOLDS_STORAGE_KEY = "halliburton-frac-layout-manifolds-v2";
 const SET_STORAGE_KEY = "halliburton-frac-layout-selected-set-v1";
 const WELL_STAGE_STORAGE_KEY = "halliburton-frac-layout-well-stage-v1";
+const SLOT_ACTUATORS_STORAGE_KEY = "halliburton-frac-layout-slot-actuators-v1";
 
 function getFullscreenState() {
   return typeof document !== "undefined" && Boolean(document.fullscreenElement);
@@ -101,6 +105,11 @@ export default function AppShell() {
     createEmptyWellStageContext,
     1,
   );
+  const [slotActuators, setSlotActuators] = useLocalStorage<SlotActuatorMap>(
+    SLOT_ACTUATORS_STORAGE_KEY,
+    {},
+    1,
+  );
   const [selectedPumpId, setSelectedPumpId] = useState<string | null>(null);
   const [selectedManifoldId, setSelectedManifoldId] = useState<string | null>(null);
   const [addPumpTarget, setAddPumpTarget] = useState<SlotTarget | null>(null);
@@ -139,17 +148,18 @@ export default function AppShell() {
 
   useEffect(() => {
     setPumps((currentPumps) => {
-      const needsDgbDefaults = currentPumps.some(
+      const needsPumpDefaults = currentPumps.some(
         (pump) =>
           typeof pump.isDgb !== "boolean" ||
           !Number.isInteger(pump.substitutionPercentage) ||
           pump.substitutionPercentage < 0 ||
           pump.substitutionPercentage > 100 ||
           typeof pump.substitutionError !== "string" ||
-          (pump.signalColumnCount !== 3 && pump.signalColumnCount !== 5),
+          (pump.signalColumnCount !== 3 && pump.signalColumnCount !== 5) ||
+          (pump.setMovement !== "entering" && pump.setMovement !== "leaving"),
       );
 
-      if (!needsDgbDefaults) {
+      if (!needsPumpDefaults) {
         return currentPumps;
       }
 
@@ -168,6 +178,12 @@ export default function AppShell() {
             ? pump.substitutionError
             : "",
         signalColumnCount: pump.signalColumnCount === 5 ? 5 : 3,
+        setMovement:
+          pump.setMovement === "entering" || pump.setMovement === "leaving"
+            ? pump.setMovement
+            : pump.side === "bench"
+              ? "leaving"
+              : "entering",
       }));
     });
   }, [setPumps]);
@@ -261,6 +277,25 @@ export default function AppShell() {
     void run();
   }
 
+  function handleSlotActuatorChange(target: SlotTarget, value: string) {
+    const slotKey = createSlotActuatorKey(target);
+    const nextValue = normalizeSlotActuatorValue(value);
+
+    setSlotActuators((currentSlotActuators) => {
+      const nextSlotActuators = {
+        ...currentSlotActuators,
+      };
+
+      if (nextValue) {
+        nextSlotActuators[slotKey] = nextValue;
+        return nextSlotActuators;
+      }
+
+      delete nextSlotActuators[slotKey];
+      return nextSlotActuators;
+    });
+  }
+
   function handleSavePump(updatedPump: Pump) {
     const result = applyPumpEdits(pumps, manifolds, updatedPump);
 
@@ -290,6 +325,7 @@ export default function AppShell() {
     sap: string;
     operationState: Pump["operationState"];
     nonOperationalReason: Pump["nonOperationalReason"];
+    setMovement: Pump["setMovement"];
     isDgb: boolean;
     substitutionPercentage: number;
     substitutionError: string;
@@ -306,6 +342,7 @@ export default function AppShell() {
       connection: "none",
       operationState: values.operationState,
       nonOperationalReason: values.nonOperationalReason,
+      setMovement: values.setMovement,
       position: benchCount + 1,
       isDgb: values.isDgb,
       substitutionPercentage: values.substitutionPercentage,
@@ -424,6 +461,7 @@ export default function AppShell() {
       const fileName = await exportLayoutWorkbook({
         manifolds,
         pumps,
+        slotActuators,
         selectedSet,
         stageContext,
       });
@@ -482,12 +520,14 @@ export default function AppShell() {
             manifolds={manifolds}
             notice={layoutNotice}
             selectedPumpId={selectedPumpId}
+            slotActuators={slotActuators}
             onAddPumpToSlot={(target) => {
               setAddPumpTarget(target);
               setIsAddPumpOpen(true);
             }}
             onEditManifold={setSelectedManifoldId}
             onSelectPump={setSelectedPumpId}
+            onSlotActuatorChange={handleSlotActuatorChange}
           />
 
           <PumpReserve

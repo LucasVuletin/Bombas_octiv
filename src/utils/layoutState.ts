@@ -11,6 +11,8 @@ export type SlotTarget = {
   side: Exclude<PumpSide, "bench">;
 };
 
+export type SlotActuatorMap = Record<string, string>;
+
 export type ManifoldSlot = {
   position: number;
   pump: Pump | null;
@@ -153,6 +155,14 @@ export function buildManifoldSlots(
 
 export function createSlotDropId(target: SlotTarget) {
   return `slot:${target.manifoldId}:${target.side}:${target.position}`;
+}
+
+export function createSlotActuatorKey(target: SlotTarget) {
+  return `${target.manifoldId}:${target.side}:${target.position}`;
+}
+
+export function normalizeSlotActuatorValue(value: string) {
+  return value.replace(/[^\d]/g, "").slice(0, 3);
 }
 
 export function parseSlotDropId(dropId: string | null) {
