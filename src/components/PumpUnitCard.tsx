@@ -130,7 +130,6 @@ export function PumpUnitCard({
                 ? `Movimiento set: ${setMovementMeta.label}. Comentario: ${setMovementComment}`
                 : `Movimiento set: ${setMovementMeta.label}`
             }
-            title={setMovementComment || undefined}
             className={`flex h-full w-6 items-center justify-center border px-0.5 text-[0.55rem] font-black uppercase leading-none tracking-[0.16em] outline-none transition focus:ring-2 focus:ring-white/45 sm:w-7 sm:text-[0.62rem] ${setMovementTabPosition} ${setMovementMeta.tabClass}`}
             onClick={(event) => event.stopPropagation()}
             onPointerDown={(event) => event.stopPropagation()}
@@ -139,7 +138,7 @@ export function PumpUnitCard({
           </button>
           {setMovementComment ? (
             <div
-              className={`pointer-events-none absolute top-1/2 z-40 w-60 -translate-y-1/2 rounded-2xl border border-slate-600/70 bg-slate-950/96 px-3 py-2 text-xs font-semibold normal-case leading-snug tracking-normal text-slate-50 opacity-0 shadow-[0_18px_50px_rgba(2,6,23,0.6)] transition group-hover:opacity-100 group-focus-within:opacity-100 sm:w-72 ${setMovementTooltipPosition}`}
+              className={`pointer-events-none absolute top-1/2 z-40 w-60 -translate-y-1/2 rounded-2xl border border-white/15 bg-black px-3 py-2 text-xs font-semibold normal-case leading-snug tracking-normal text-white opacity-0 shadow-[0_18px_50px_rgba(0,0,0,0.78)] transition group-hover:opacity-100 group-focus-within:opacity-100 sm:w-72 ${setMovementTooltipPosition}`}
               role="tooltip"
             >
               {setMovementComment}
