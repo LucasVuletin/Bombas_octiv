@@ -22,7 +22,7 @@ import { PumpUnitCard } from "./components/PumpUnitCard";
 import { createDefaultManifolds } from "./data/defaultManifolds";
 import { createDefaultPumps } from "./data/defaultPumps";
 import { useLocalStorage } from "./hooks/useLocalStorage";
-import { Manifold, Pump, SetNumber, WellStageContext } from "./models";
+import { isPumpSetMovement, Manifold, Pump, SetNumber, WellStageContext } from "./models";
 import {
   applyPumpEdits,
   createSlotActuatorKey,
@@ -157,43 +157,43 @@ export default function AppShell() {
           typeof pump.substitutionError !== "string" ||
           (pump.signalColumnCount !== 3 && pump.signalColumnCount !== 5) ||
           typeof pump.setMovementEdited !== "boolean" ||
-          (pump.setMovement !== null &&
-            pump.setMovement !== "entering" &&
-            pump.setMovement !== "leaving") ||
-          (pump.setMovementEdited === true &&
-            pump.setMovement !== "entering" &&
-            pump.setMovement !== "leaving") ||
-          (pump.setMovementEdited !== true && pump.setMovement !== null),
+          (pump.setMovement !== null && !isPumpSetMovement(pump.setMovement)) ||
+          (pump.setMovementEdited === true && !isPumpSetMovement(pump.setMovement)) ||
+          (pump.setMovementEdited !== true && pump.setMovement !== null) ||
+          typeof pump.setMovementComment !== "string",
       );
 
       if (!needsPumpDefaults) {
         return currentPumps;
       }
 
-      return currentPumps.map((pump) => ({
-        ...pump,
-        isDgb: pump.isDgb === true,
-        substitutionPercentage:
-          pump.isDgb === true &&
-          Number.isInteger(pump.substitutionPercentage) &&
-          pump.substitutionPercentage >= 0 &&
-          pump.substitutionPercentage <= 100
-            ? pump.substitutionPercentage
-            : 0,
-        substitutionError:
-          pump.isDgb === true && typeof pump.substitutionError === "string"
-            ? pump.substitutionError
-            : "",
-        signalColumnCount: pump.signalColumnCount === 5 ? 5 : 3,
-        setMovement:
-          pump.setMovementEdited === true &&
-          (pump.setMovement === "entering" || pump.setMovement === "leaving")
-            ? pump.setMovement
-            : null,
-        setMovementEdited:
-          pump.setMovementEdited === true &&
-          (pump.setMovement === "entering" || pump.setMovement === "leaving"),
-      }));
+      return currentPumps.map((pump) => {
+        const hasEditedSetMovement =
+          pump.setMovementEdited === true && isPumpSetMovement(pump.setMovement);
+
+        return {
+          ...pump,
+          isDgb: pump.isDgb === true,
+          substitutionPercentage:
+            pump.isDgb === true &&
+            Number.isInteger(pump.substitutionPercentage) &&
+            pump.substitutionPercentage >= 0 &&
+            pump.substitutionPercentage <= 100
+              ? pump.substitutionPercentage
+              : 0,
+          substitutionError:
+            pump.isDgb === true && typeof pump.substitutionError === "string"
+              ? pump.substitutionError
+              : "",
+          signalColumnCount: pump.signalColumnCount === 5 ? 5 : 3,
+          setMovement: hasEditedSetMovement ? pump.setMovement : null,
+          setMovementEdited: hasEditedSetMovement,
+          setMovementComment:
+            hasEditedSetMovement && typeof pump.setMovementComment === "string"
+              ? pump.setMovementComment.trim()
+              : "",
+        };
+      });
     });
   }, [setPumps]);
 
@@ -336,6 +336,7 @@ export default function AppShell() {
     nonOperationalReason: Pump["nonOperationalReason"];
     setMovement: Pump["setMovement"];
     setMovementEdited: Pump["setMovementEdited"];
+    setMovementComment: Pump["setMovementComment"];
     isDgb: boolean;
     substitutionPercentage: number;
     substitutionError: string;
@@ -354,6 +355,7 @@ export default function AppShell() {
       nonOperationalReason: values.nonOperationalReason,
       setMovement: values.setMovement,
       setMovementEdited: values.setMovementEdited,
+      setMovementComment: values.setMovementComment,
       position: benchCount + 1,
       isDgb: values.isDgb,
       substitutionPercentage: values.substitutionPercentage,

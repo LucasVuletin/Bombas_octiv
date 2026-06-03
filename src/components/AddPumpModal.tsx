@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createMockSignals } from "../data/defaultPumps";
 import { PumpFormFields } from "./PumpFormFields";
-import { Pump } from "../models";
+import { PUMP_SET_MOVEMENT_META, Pump } from "../models";
 import {
   PumpFormErrors,
   PumpFormValues,
@@ -19,6 +19,7 @@ type AddPumpModalProps = {
     nonOperationalReason: Pump["nonOperationalReason"];
     setMovement: Pump["setMovement"];
     setMovementEdited: Pump["setMovementEdited"];
+    setMovementComment: Pump["setMovementComment"];
     isDgb: boolean;
     substitutionPercentage: number;
     substitutionError: string;
@@ -39,6 +40,7 @@ function createInitialValues(): PumpFormValues {
     operationState: "",
     nonOperationalReason: "",
     setMovement: "",
+    setMovementComment: "",
     isDgb: false,
     substitutionPercentage: "0",
     substitutionError: "",
@@ -128,6 +130,19 @@ export function AddPumpModal({
         return nextValues;
       }
 
+      if (field === "setMovement") {
+        nextValues.setMovement = value as PumpFormValues["setMovement"];
+
+        if (
+          !nextValues.setMovement ||
+          !PUMP_SET_MOVEMENT_META[nextValues.setMovement].requiresComment
+        ) {
+          nextValues.setMovementComment = "";
+        }
+
+        return nextValues;
+      }
+
       if (field === "operationState" && value !== "non-operative") {
         nextValues.operationState = value as PumpFormValues["operationState"];
         nextValues.nonOperationalReason = "";
@@ -141,6 +156,7 @@ export function AddPumpModal({
     setErrors((currentErrors) => ({
       ...currentErrors,
       [field]: undefined,
+      ...(field === "setMovement" ? { setMovementComment: undefined } : {}),
     }));
   }
 
@@ -161,6 +177,10 @@ export function AddPumpModal({
           : null,
       setMovement: values.setMovement || null,
       setMovementEdited: values.setMovement !== "",
+      setMovementComment:
+        values.setMovement && PUMP_SET_MOVEMENT_META[values.setMovement].requiresComment
+          ? values.setMovementComment.trim()
+          : "",
       isDgb: values.isDgb,
       substitutionPercentage: validation.parsedSubstitutionPercentage,
       substitutionError: values.isDgb ? values.substitutionError.trim() : "",

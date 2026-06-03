@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pump } from "../models";
+import { isPumpSetMovement, PUMP_SET_MOVEMENT_META, Pump } from "../models";
 import { PumpFormFields } from "./PumpFormFields";
 import {
   PumpFormErrors,
@@ -22,6 +22,7 @@ function getInitialValues(pump: Pump | null): PumpFormValues {
       operationState: "",
       nonOperationalReason: "",
       setMovement: "",
+      setMovementComment: "",
       isDgb: false,
       substitutionPercentage: "0",
       substitutionError: "",
@@ -39,9 +40,10 @@ function getInitialValues(pump: Pump | null): PumpFormValues {
     nonOperationalReason: pump.nonOperationalReason ?? "",
     setMovement:
       pump.setMovementEdited === true &&
-      (pump.setMovement === "entering" || pump.setMovement === "leaving")
+      isPumpSetMovement(pump.setMovement)
         ? pump.setMovement
         : "",
+    setMovementComment: pump.setMovementComment ?? "",
     isDgb: pump.isDgb === true,
     substitutionPercentage: String(pump.substitutionPercentage ?? 0),
     substitutionError: pump.substitutionError ?? "",
@@ -131,6 +133,19 @@ export function PumpEditModal({ pump, onClose, onDelete, onSave }: PumpEditModal
         return nextValues;
       }
 
+      if (field === "setMovement") {
+        nextValues.setMovement = value as PumpFormValues["setMovement"];
+
+        if (
+          !nextValues.setMovement ||
+          !PUMP_SET_MOVEMENT_META[nextValues.setMovement].requiresComment
+        ) {
+          nextValues.setMovementComment = "";
+        }
+
+        return nextValues;
+      }
+
       if (field === "operationState" && value !== "non-operative") {
         nextValues.operationState = value as PumpFormValues["operationState"];
         nextValues.nonOperationalReason = "";
@@ -144,6 +159,7 @@ export function PumpEditModal({ pump, onClose, onDelete, onSave }: PumpEditModal
     setErrors((currentErrors) => ({
       ...currentErrors,
       [field]: undefined,
+      ...(field === "setMovement" ? { setMovementComment: undefined } : {}),
     }));
     setSaveError(null);
   }
@@ -170,6 +186,10 @@ export function PumpEditModal({ pump, onClose, onDelete, onSave }: PumpEditModal
           : null,
       setMovement: values.setMovement || null,
       setMovementEdited: values.setMovement !== "",
+      setMovementComment:
+        values.setMovement && PUMP_SET_MOVEMENT_META[values.setMovement].requiresComment
+          ? values.setMovementComment.trim()
+          : "",
       isDgb: values.isDgb,
       substitutionPercentage: validation.parsedSubstitutionPercentage,
       substitutionError: values.isDgb ? values.substitutionError.trim() : "",

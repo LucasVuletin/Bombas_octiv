@@ -3,7 +3,7 @@ export type PumpSide = "left" | "right" | "bench";
 export type PumpConnection = "clean" | "dirty" | "none";
 export type PumpOperationState = "operative" | "non-operative";
 export type PumpNonOperationalReason = string;
-export type PumpSetMovement = "entering" | "leaving";
+export type PumpSetMovement = "entering" | "leaving" | "maintenance";
 export type ManifoldType = "clean" | "dirty";
 export type PumpSignalKey = "p" | "d" | "s";
 export type PumpSignalColumnCount = 3 | 5;
@@ -38,6 +38,7 @@ export type Pump = {
   nonOperationalReason: PumpNonOperationalReason | null;
   setMovement: PumpSetMovement | null;
   setMovementEdited: boolean;
+  setMovementComment: string;
   position: number;
   isDgb: boolean;
   substitutionPercentage: number;
@@ -103,19 +104,46 @@ export const PUMP_SET_MOVEMENT_META: Record<
     label: string;
     tabClass: string;
     selectClass: string;
+    requiresComment: boolean;
+    commentLabel: string;
+    commentPlaceholder: string;
   }
 > = {
   entering: {
     label: "Entra",
     tabClass: "border-emerald-300/40 bg-emerald-500/85 text-emerald-950 shadow-[0_0_18px_rgba(52,211,153,0.34)]",
     selectClass: "text-emerald-100",
+    requiresComment: false,
+    commentLabel: "Comentario de entrada",
+    commentPlaceholder: "Comentario opcional de entrada",
   },
   leaving: {
     label: "Sale",
     tabClass: "border-red-300/40 bg-red-500/85 text-red-950 shadow-[0_0_18px_rgba(248,113,113,0.34)]",
     selectClass: "text-red-100",
+    requiresComment: true,
+    commentLabel: "Comentario de salida",
+    commentPlaceholder: "Explica por que la bomba sale del set",
+  },
+  maintenance: {
+    label: "MTTO",
+    tabClass: "border-sky-300/40 bg-sky-500/85 text-sky-950 shadow-[0_0_18px_rgba(56,189,248,0.34)]",
+    selectClass: "text-sky-100",
+    requiresComment: true,
+    commentLabel: "Comentario de mantenimiento",
+    commentPlaceholder: "Describe el motivo o trabajo de mantenimiento",
   },
 };
+
+export const PUMP_SET_MOVEMENT_VALUES: PumpSetMovement[] = [
+  "entering",
+  "leaving",
+  "maintenance",
+];
+
+export function isPumpSetMovement(value: unknown): value is PumpSetMovement {
+  return PUMP_SET_MOVEMENT_VALUES.includes(value as PumpSetMovement);
+}
 
 export const NON_OPERATIONAL_REASON_OPTIONS: Array<{
   value: PumpNonOperationalReason;
@@ -203,7 +231,7 @@ export const PUMP_OPERATION_OPTIONS = (
 }));
 
 export const PUMP_SET_MOVEMENT_OPTIONS = (
-  Object.keys(PUMP_SET_MOVEMENT_META) as PumpSetMovement[]
+  PUMP_SET_MOVEMENT_VALUES
 ).map((setMovement) => ({
   value: setMovement,
   label: PUMP_SET_MOVEMENT_META[setMovement].label,

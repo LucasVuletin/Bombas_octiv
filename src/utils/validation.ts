@@ -3,6 +3,7 @@ import {
   MAX_SIGNAL_VALUE,
   MIN_SIGNAL_VALUE,
   ManifoldType,
+  PUMP_SET_MOVEMENT_META,
   PumpConnection,
   PumpNonOperationalReason,
   PumpOperationState,
@@ -15,6 +16,7 @@ export type PumpFormValues = {
   operationState: PumpOperationState | "";
   nonOperationalReason: PumpNonOperationalReason;
   setMovement: PumpSetMovement | "";
+  setMovementComment: string;
   isDgb: boolean;
   substitutionPercentage: string;
   substitutionError: string;
@@ -31,6 +33,7 @@ export type PumpFormErrors = Partial<
     | "operationState"
     | "nonOperationalReason"
     | "setMovement"
+    | "setMovementComment"
     | "substitutionPercentage"
     | "pValue"
     | "dValue"
@@ -63,6 +66,14 @@ export function validatePumpForm(values: PumpFormValues) {
 
   if (values.operationState === "non-operative" && !values.nonOperationalReason.trim()) {
     errors.nonOperationalReason = "Ingresa un motivo.";
+  }
+
+  if (
+    values.setMovement &&
+    PUMP_SET_MOVEMENT_META[values.setMovement].requiresComment &&
+    !values.setMovementComment.trim()
+  ) {
+    errors.setMovementComment = "Ingresa un comentario.";
   }
 
   const parsedSubstitutionPercentage = Number(values.substitutionPercentage);

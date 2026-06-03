@@ -225,6 +225,7 @@ export function createDefaultPumps(): Pump[] {
       nonOperationalReason: pump.nonOperationalReason,
       setMovement: null,
       setMovementEdited: false,
+      setMovementComment: "",
       position: pump.position,
       isDgb: false,
       substitutionPercentage: 0,

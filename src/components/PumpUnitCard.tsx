@@ -2,6 +2,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import {
   getNonOperationalReasonLabel,
+  isPumpSetMovement,
   PUMP_OPERATION_META,
   PUMP_SET_MOVEMENT_META,
   Pump,
@@ -46,16 +47,22 @@ export function PumpUnitCard({
   isOverlay = false,
 }: PumpUnitCardProps) {
   const operationMeta = PUMP_OPERATION_META[pump.operationState];
-  const hasSetMovementTab =
-    pump.setMovementEdited === true &&
-    (pump.setMovement === "entering" || pump.setMovement === "leaving");
-  const setMovementMeta = hasSetMovementTab
-    ? PUMP_SET_MOVEMENT_META[pump.setMovement as "entering" | "leaving"]
-    : null;
+  const setMovement =
+    pump.setMovementEdited === true && isPumpSetMovement(pump.setMovement)
+      ? pump.setMovement
+      : null;
+  const setMovementMeta = setMovement ? PUMP_SET_MOVEMENT_META[setMovement] : null;
+  const hasSetMovementTab = setMovementMeta !== null;
+  const setMovementComment =
+    hasSetMovementTab && pump.setMovementComment ? pump.setMovementComment.trim() : "";
   const setMovementTabPosition =
     pump.side === "left"
       ? "left-0 rounded-l-xl rounded-r-md sm:left-[-1.15rem] sm:rounded-l-2xl"
       : "right-0 rounded-l-md rounded-r-xl sm:right-[-1.15rem] sm:rounded-r-2xl";
+  const setMovementTooltipPosition =
+    pump.side === "left"
+      ? "left-8 text-left sm:left-10"
+      : "right-8 text-right sm:right-10";
   const contentPaddingClass =
     !hasSetMovementTab
       ? "p-2 sm:p-3.5 xl:p-4"
@@ -114,10 +121,30 @@ export function PumpUnitCard({
     >
       {setMovementMeta ? (
         <div
-          aria-label={`Movimiento set: ${setMovementMeta.label}`}
-          className={`pointer-events-none absolute bottom-5 top-5 z-30 flex w-6 items-center justify-center border px-0.5 text-[0.55rem] font-black uppercase leading-none tracking-[0.16em] sm:w-7 sm:text-[0.62rem] ${setMovementTabPosition} ${setMovementMeta.tabClass}`}
+          className={`group absolute bottom-5 top-5 z-30 ${setMovementTabPosition}`}
         >
-          <span className="vertical-label rotate-180">{setMovementMeta.label}</span>
+          <button
+            type="button"
+            aria-label={
+              setMovementComment
+                ? `Movimiento set: ${setMovementMeta.label}. Comentario: ${setMovementComment}`
+                : `Movimiento set: ${setMovementMeta.label}`
+            }
+            title={setMovementComment || undefined}
+            className={`flex h-full w-6 items-center justify-center border px-0.5 text-[0.55rem] font-black uppercase leading-none tracking-[0.16em] outline-none transition focus:ring-2 focus:ring-white/45 sm:w-7 sm:text-[0.62rem] ${setMovementTabPosition} ${setMovementMeta.tabClass}`}
+            onClick={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            <span className="vertical-label rotate-180">{setMovementMeta.label}</span>
+          </button>
+          {setMovementComment ? (
+            <div
+              className={`pointer-events-none absolute top-1/2 z-40 w-60 -translate-y-1/2 rounded-2xl border border-slate-600/70 bg-slate-950/96 px-3 py-2 text-xs font-semibold normal-case leading-snug tracking-normal text-slate-50 opacity-0 shadow-[0_18px_50px_rgba(2,6,23,0.6)] transition group-hover:opacity-100 group-focus-within:opacity-100 sm:w-72 ${setMovementTooltipPosition}`}
+              role="tooltip"
+            >
+              {setMovementComment}
+            </div>
+          ) : null}
         </div>
       ) : null}
 

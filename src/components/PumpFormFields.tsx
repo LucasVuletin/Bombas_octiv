@@ -4,9 +4,9 @@ import {
   MIN_SIGNAL_VALUE,
   NON_OPERATIONAL_REASON_OPTIONS,
   PUMP_OPERATION_OPTIONS,
+  PUMP_SET_MOVEMENT_META,
   PUMP_SET_MOVEMENT_OPTIONS,
   PUMP_SIGNAL_COLUMN_OPTIONS,
-  PumpSetMovement,
   PumpSignalColumnCount,
 } from "../models";
 import { PumpFormErrors, PumpFormValues } from "../utils/validation";
@@ -37,6 +37,11 @@ export function PumpFormFields({
   showSignals = false,
   onChange,
 }: PumpFormFieldsProps) {
+  const selectedMovementMeta = values.setMovement
+    ? PUMP_SET_MOVEMENT_META[values.setMovement]
+    : null;
+  const showMovementComment = selectedMovementMeta?.requiresComment === true;
+
   return (
     <div className="space-y-5">
       <label className="block">
@@ -105,7 +110,7 @@ export function PumpFormFields({
         <select
           value={values.setMovement}
           onChange={(event) =>
-            onChange("setMovement", event.target.value as PumpSetMovement)
+            onChange("setMovement", event.target.value as PumpFormValues["setMovement"])
           }
           className="w-full rounded-2xl border border-slate-700/70 bg-slate-900/85 px-5 py-4 text-lg text-slate-50 outline-none transition focus:border-[#7FB3C8]/60 focus:ring-2 focus:ring-[#7FB3C8]/20"
         >
@@ -117,10 +122,28 @@ export function PumpFormFields({
           ))}
         </select>
         <p className="mt-2 text-sm text-slate-400">
-          La solapa aparece solo cuando se carga manualmente Entra o Sale.
+          La solapa aparece solo cuando se carga manualmente Entra, Sale o MTTO.
         </p>
         <FieldError message={errors.setMovement} />
       </label>
+
+      {showMovementComment && selectedMovementMeta ? (
+        <label className="block">
+          <span className="mb-2 block text-sm font-semibold uppercase tracking-[0.22em] text-slate-300">
+            {selectedMovementMeta.commentLabel}
+          </span>
+          <textarea
+            value={values.setMovementComment}
+            onChange={(event) => onChange("setMovementComment", event.target.value)}
+            className="min-h-[7rem] w-full resize-y rounded-2xl border border-slate-700/70 bg-slate-900/85 px-5 py-4 text-lg text-slate-50 outline-none transition focus:border-[#7FB3C8]/60 focus:ring-2 focus:ring-[#7FB3C8]/20"
+            placeholder={selectedMovementMeta.commentPlaceholder}
+          />
+          <p className="mt-2 text-sm text-slate-400">
+            Este comentario aparece flotante sobre la solapa y se exporta en Excel.
+          </p>
+          <FieldError message={errors.setMovementComment} />
+        </label>
+      ) : null}
 
       <div className="rounded-[1.6rem] border border-slate-700/70 bg-slate-950/45 p-5">
         <p className="mb-4 text-sm font-semibold uppercase tracking-[0.22em] text-slate-300">

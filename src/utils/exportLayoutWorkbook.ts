@@ -2,6 +2,7 @@ import writeXlsxFile, { Cell, SheetData } from "write-excel-file/browser";
 import { APP_AUTHOR_NAME, APP_VERSION } from "../appIdentity";
 import {
   getNonOperationalReasonLabel,
+  isPumpSetMovement,
   Manifold,
   Pump,
   PUMP_SET_MOVEMENT_META,
@@ -27,7 +28,7 @@ const RECOMMENDED_FIELDS: RecommendationRow[] = [
   ["Configuracion", "Set, SAP, manifold, lado y slot", "Disponible ahora", "Reconstruye la configuracion fisica de cada bomba."],
   ["Configuracion", "Actuadores asignados por slot", "Disponible ahora", "Registra capacidad asignada incluso cuando no hay bomba en el slot."],
   ["Estado", "Operativa, motivo no operativa y error DGB", "Disponible ahora", "Define eventos de indisponibilidad y causas."],
-  ["Estado", "Movimiento de bomba Entra/Sale", "Disponible ahora", "Diferencia equipos que ingresan o salen del set durante cambios operativos."],
+  ["Estado", "Movimiento de bomba Entra/Sale/MTTO y comentarios", "Disponible ahora", "Diferencia equipos que ingresan, salen o pasan a mantenimiento durante cambios operativos."],
   ["DGB", "Tiene DGB y porcentaje de sustitucion", "Disponible ahora", "Mide el resultado principal de sustitucion."],
   ["Senales bomba", "P, D y S", "Disponible ahora", "Variables de condicion de la bomba en el snapshot."],
   ["Tratamiento", "Caudal total y caudal asignado a cada pozo", "Agregar", "Explica demanda real y distribucion en Dual/Simul."],
@@ -96,12 +97,24 @@ function toContextValue(value: string) {
 function getSetMovementLabel(pump: Pump) {
   if (
     pump.setMovementEdited !== true ||
-    (pump.setMovement !== "entering" && pump.setMovement !== "leaving")
+    !isPumpSetMovement(pump.setMovement)
   ) {
     return "";
   }
 
   return PUMP_SET_MOVEMENT_META[pump.setMovement].label;
+}
+
+function getSetMovementComment(pump: Pump) {
+  if (
+    pump.setMovementEdited !== true ||
+    !isPumpSetMovement(pump.setMovement) ||
+    !PUMP_SET_MOVEMENT_META[pump.setMovement].requiresComment
+  ) {
+    return "";
+  }
+
+  return pump.setMovementComment.trim();
 }
 
 function getSlotActuatorValue(
@@ -180,6 +193,7 @@ export async function exportLayoutWorkbook({
     "SAP",
     "En set",
     "Movimiento set",
+    "comentarios",
     "Manifold",
     "Tipo manifold",
     "Lado",
@@ -224,6 +238,7 @@ export async function exportLayoutWorkbook({
       pump.sap,
       toYesNo(inSet),
       getSetMovementLabel(pump),
+      getSetMovementComment(pump),
       manifold?.label ?? "",
       manifold?.type === "clean" ? "Limpio" : manifold?.type === "dirty" ? "Sucio" : "",
       SIDE_LABELS[pump.side],
@@ -331,10 +346,10 @@ export async function exportLayoutWorkbook({
         sheet: "Bombas",
         columns: [
           { width: 21 }, { width: 20 }, { width: 8 }, { width: 14 }, { width: 20 }, { width: 12 },
-          { width: 20 }, { width: 12 }, { width: 10 }, { width: 10 }, { width: 16 }, { width: 16 },
-          { width: 16 }, { width: 16 }, { width: 8 }, { width: 19 }, { width: 16 }, { width: 25 },
-          { width: 10 }, { width: 17 }, { width: 15 }, { width: 34 }, { width: 9 }, { width: 9 },
-          { width: 9 }, { width: 17 }, { width: 14 },
+          { width: 20 }, { width: 12 }, { width: 10 }, { width: 10 }, { width: 16 }, { width: 34 },
+          { width: 16 }, { width: 16 }, { width: 16 }, { width: 8 }, { width: 19 }, { width: 16 },
+          { width: 25 }, { width: 10 }, { width: 17 }, { width: 15 }, { width: 34 }, { width: 9 },
+          { width: 9 }, { width: 9 }, { width: 17 }, { width: 14 },
         ],
         stickyRowsCount: 1,
         showGridLines: false,
