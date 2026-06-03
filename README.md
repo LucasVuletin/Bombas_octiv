@@ -177,7 +177,7 @@ src/
 - Si una bomba esta `No operativa`, el modal exige escribir o seleccionar un motivo.
 - Las bombas `DGB` permiten cargar un porcentaje de sustitucion de 0 a 100.
 - Si una bomba `DGB` no sustituye, su editor permite registrar un comentario visible bajo `Error:`.
-- Cada bomba permite marcar si `Entra` o `Sale` del set mediante una solapa vertical externa verde o roja.
+- Cada bomba puede marcarse manualmente como `Entra` o `Sale`; la solapa vertical solo aparece en bombas editadas con ese dato.
 - Cada slot permite cargar manualmente actuadores asignados, incluso cuando el slot esta vacio.
 - La exportacion Excel incluye el movimiento de cada bomba y una hoja de `Slots y actuadores`.
 - El contador `Bombas sin sustituir` considera bombas `DGB` operativas del set con `0%` y comentario `Error:` cargado.

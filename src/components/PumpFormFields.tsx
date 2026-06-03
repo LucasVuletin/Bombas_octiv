@@ -109,6 +109,7 @@ export function PumpFormFields({
           }
           className="w-full rounded-2xl border border-slate-700/70 bg-slate-900/85 px-5 py-4 text-lg text-slate-50 outline-none transition focus:border-[#7FB3C8]/60 focus:ring-2 focus:ring-[#7FB3C8]/20"
         >
+          <option value="">Sin marcar</option>
           {PUMP_SET_MOVEMENT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -116,7 +117,7 @@ export function PumpFormFields({
           ))}
         </select>
         <p className="mt-2 text-sm text-slate-400">
-          Se muestra como una solapa vertical afuera de la bomba.
+          La solapa aparece solo cuando se carga manualmente Entra o Sale.
         </p>
         <FieldError message={errors.setMovement} />
       </label>

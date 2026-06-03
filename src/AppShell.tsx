@@ -156,7 +156,14 @@ export default function AppShell() {
           pump.substitutionPercentage > 100 ||
           typeof pump.substitutionError !== "string" ||
           (pump.signalColumnCount !== 3 && pump.signalColumnCount !== 5) ||
-          (pump.setMovement !== "entering" && pump.setMovement !== "leaving"),
+          typeof pump.setMovementEdited !== "boolean" ||
+          (pump.setMovement !== null &&
+            pump.setMovement !== "entering" &&
+            pump.setMovement !== "leaving") ||
+          (pump.setMovementEdited === true &&
+            pump.setMovement !== "entering" &&
+            pump.setMovement !== "leaving") ||
+          (pump.setMovementEdited !== true && pump.setMovement !== null),
       );
 
       if (!needsPumpDefaults) {
@@ -179,11 +186,13 @@ export default function AppShell() {
             : "",
         signalColumnCount: pump.signalColumnCount === 5 ? 5 : 3,
         setMovement:
-          pump.setMovement === "entering" || pump.setMovement === "leaving"
+          pump.setMovementEdited === true &&
+          (pump.setMovement === "entering" || pump.setMovement === "leaving")
             ? pump.setMovement
-            : pump.side === "bench"
-              ? "leaving"
-              : "entering",
+            : null,
+        setMovementEdited:
+          pump.setMovementEdited === true &&
+          (pump.setMovement === "entering" || pump.setMovement === "leaving"),
       }));
     });
   }, [setPumps]);
@@ -326,6 +335,7 @@ export default function AppShell() {
     operationState: Pump["operationState"];
     nonOperationalReason: Pump["nonOperationalReason"];
     setMovement: Pump["setMovement"];
+    setMovementEdited: Pump["setMovementEdited"];
     isDgb: boolean;
     substitutionPercentage: number;
     substitutionError: string;
@@ -343,6 +353,7 @@ export default function AppShell() {
       operationState: values.operationState,
       nonOperationalReason: values.nonOperationalReason,
       setMovement: values.setMovement,
+      setMovementEdited: values.setMovementEdited,
       position: benchCount + 1,
       isDgb: values.isDgb,
       substitutionPercentage: values.substitutionPercentage,

@@ -94,7 +94,14 @@ function toContextValue(value: string) {
 }
 
 function getSetMovementLabel(pump: Pump) {
-  return PUMP_SET_MOVEMENT_META[pump.setMovement === "leaving" ? "leaving" : "entering"].label;
+  if (
+    pump.setMovementEdited !== true ||
+    (pump.setMovement !== "entering" && pump.setMovement !== "leaving")
+  ) {
+    return "";
+  }
+
+  return PUMP_SET_MOVEMENT_META[pump.setMovement].label;
 }
 
 function getSlotActuatorValue(

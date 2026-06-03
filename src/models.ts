@@ -36,7 +36,8 @@ export type Pump = {
   connection: PumpConnection;
   operationState: PumpOperationState;
   nonOperationalReason: PumpNonOperationalReason | null;
-  setMovement: PumpSetMovement;
+  setMovement: PumpSetMovement | null;
+  setMovementEdited: boolean;
   position: number;
   isDgb: boolean;
   substitutionPercentage: number;
