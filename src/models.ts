@@ -8,6 +8,8 @@ export type ManifoldType = "clean" | "dirty";
 export type PumpSignalKey = "p" | "d" | "s";
 export type PumpSignalColumnCount = 3 | 5;
 export type WellStageMode = "single" | "dual-simul";
+export type InterstagePlanStatus = "planning" | "running" | "completed";
+export type InterstageTaskDepartment = "pe" | "iem";
 
 export type WellStageEntry = {
   well: string;
@@ -52,6 +54,50 @@ export type Manifold = {
   label: string;
   type: ManifoldType;
   pumpsPerSide: number;
+};
+
+export type InterstageTask = {
+  id: string;
+  department: InterstageTaskDepartment;
+  area: string;
+  pumpSap: string;
+  action: string;
+  board: string;
+  boardPosition: string;
+  crew: string;
+  detail: string;
+  estimatedMinutes: number;
+  completed: boolean;
+  createdAt: string;
+};
+
+export type InterstagePlan = {
+  id: string;
+  nextStageContext: WellStageContext;
+  stageLeadMinutes: number;
+  targetMinutes: number;
+  status: InterstagePlanStatus;
+  startedAt: string | null;
+  endedAt: string | null;
+  tasks: InterstageTask[];
+  note: string;
+  historyRecordId: string | null;
+  updatedAt: string | null;
+};
+
+export type InterstageHistoryRecord = {
+  id: string;
+  setNumber: SetNumber;
+  stageLabel: string;
+  signature: string;
+  taskCount: number;
+  peTaskCount: number;
+  iemTaskCount: number;
+  targetMinutes: number;
+  startedAt: string;
+  endedAt: string;
+  durationSeconds: number;
+  tasks: InterstageTask[];
 };
 
 export const SET_OPTIONS: SetNumber[] = [1, 2, 3, 4, 5, 6];

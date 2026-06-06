@@ -14,6 +14,7 @@ import { AddManifoldModal } from "./components/AddManifoldModal";
 import { AddPumpModal } from "./components/AddPumpModal";
 import { APP_AUTHOR_CREDIT, APP_VERSION_LABEL } from "./appIdentity";
 import { ControlHeader } from "./components/ControlHeader";
+import { InterstagePlanner } from "./components/InterstagePlanner";
 import { LayoutWorkspace } from "./components/LayoutWorkspace";
 import { ManifoldEditModal } from "./components/ManifoldEditModal";
 import { PumpEditModal } from "./components/PumpEditModal";
@@ -22,7 +23,15 @@ import { PumpUnitCard } from "./components/PumpUnitCard";
 import { createDefaultManifolds } from "./data/defaultManifolds";
 import { createDefaultPumps } from "./data/defaultPumps";
 import { useLocalStorage } from "./hooks/useLocalStorage";
-import { isPumpSetMovement, Manifold, Pump, SetNumber, WellStageContext } from "./models";
+import {
+  InterstageHistoryRecord,
+  InterstagePlan,
+  isPumpSetMovement,
+  Manifold,
+  Pump,
+  SetNumber,
+  WellStageContext,
+} from "./models";
 import {
   applyPumpEdits,
   createSlotActuatorKey,
@@ -41,6 +50,8 @@ const MANIFOLDS_STORAGE_KEY = "halliburton-frac-layout-manifolds-v2";
 const SET_STORAGE_KEY = "halliburton-frac-layout-selected-set-v1";
 const WELL_STAGE_STORAGE_KEY = "halliburton-frac-layout-well-stage-v1";
 const SLOT_ACTUATORS_STORAGE_KEY = "halliburton-frac-layout-slot-actuators-v1";
+const INTERSTAGE_PLAN_STORAGE_KEY = "halliburton-frac-layout-interstage-plan-v1";
+const INTERSTAGE_HISTORY_STORAGE_KEY = "halliburton-frac-layout-interstage-history-v1";
 
 function getFullscreenState() {
   return typeof document !== "undefined" && Boolean(document.fullscreenElement);
@@ -84,6 +95,24 @@ function createEmptyWellStageContext(): WellStageContext {
   };
 }
 
+function createInterstagePlan(): InterstagePlan {
+  const createdAt = new Date().toISOString();
+
+  return {
+    id: createEntityId("interstage-plan"),
+    nextStageContext: createEmptyWellStageContext(),
+    stageLeadMinutes: 20,
+    targetMinutes: 15,
+    status: "planning",
+    startedAt: null,
+    endedAt: null,
+    tasks: [],
+    note: "",
+    historyRecordId: null,
+    updatedAt: createdAt,
+  };
+}
+
 export default function AppShell() {
   const [pumps, setPumps] = useLocalStorage<Pump[]>(
     PUMPS_STORAGE_KEY,
@@ -110,6 +139,15 @@ export default function AppShell() {
     {},
     1,
   );
+  const [interstagePlan, setInterstagePlan, resetInterstagePlan] =
+    useLocalStorage<InterstagePlan>(
+      INTERSTAGE_PLAN_STORAGE_KEY,
+      createInterstagePlan,
+      2,
+    );
+  const [interstageHistory, setInterstageHistory] = useLocalStorage<
+    InterstageHistoryRecord[]
+  >(INTERSTAGE_HISTORY_STORAGE_KEY, [], 1);
   const [selectedPumpId, setSelectedPumpId] = useState<string | null>(null);
   const [selectedManifoldId, setSelectedManifoldId] = useState<string | null>(null);
   const [addPumpTarget, setAddPumpTarget] = useState<SlotTarget | null>(null);
@@ -526,6 +564,21 @@ export default function AppShell() {
             onToggleFullscreen={handleToggleFullscreen}
             isExporting={isExporting}
             isFullscreen={isFullscreen}
+          />
+
+          <InterstagePlanner
+            history={interstageHistory}
+            plan={interstagePlan}
+            pumps={pumps}
+            selectedSet={selectedSet}
+            onHistoryAdd={(record) =>
+              setInterstageHistory((currentHistory) => [
+                record,
+                ...currentHistory,
+              ].slice(0, 80))
+            }
+            onPlanChange={setInterstagePlan}
+            onPlanReset={resetInterstagePlan}
           />
 
           <LayoutWorkspace
